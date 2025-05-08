@@ -9,13 +9,16 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import ru.carbohz.intershop.dto.ItemDto;
 import ru.carbohz.intershop.dto.PageableItemsDto;
+import ru.carbohz.intershop.model.Action;
 import ru.carbohz.intershop.model.SortOption;
+import ru.carbohz.intershop.service.CartService;
 import ru.carbohz.intershop.service.ItemService;
 
 @Controller
 @RequiredArgsConstructor
 public class ItemController {
     private final ItemService itemService;
+    private final CartService cartService;
 
     @GetMapping("/main/items")
     public String getItems(@RequestParam(name = "search", defaultValue = "") String search,
@@ -30,11 +33,12 @@ public class ItemController {
         model.addAttribute("sort", sort);
         model.addAttribute("paging", pageableItems.getPageable());
 
-        return "main.html";
+        return "main";
     }
 
     @PostMapping("/main/items/{id}")
-    public String addItemToCart(@PathVariable Integer id) {
+    public String addItemToCart(@PathVariable Long id, @RequestParam Action action) {
+        cartService.changeItemsInCart(id, action);
         return "redirect:/main/items";
     }
 
@@ -44,11 +48,12 @@ public class ItemController {
 
         model.addAttribute("item", itemDto);
 
-        return "item.html";
+        return "item";
     }
 
     @PostMapping("/items/{id}")
-    public String addItemToCart(@PathVariable Integer id, Model model) {
-        return "item.html";
+    public String addItemToCartV2(@PathVariable Long id, @RequestParam Action action) {
+        cartService.changeItemsInCart(id, action);
+        return "redirect:/items/" + id;
     }
 }

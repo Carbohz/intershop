@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: intershop
+  datasource:
+    url: jdbc:postgresql://localhost:5432/intershopdb
+    username: postgres
+    password: secret
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: false
+
+logging:
+  level:
+    org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG

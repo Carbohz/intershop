@@ -33,6 +33,7 @@ public class OrderController {
         OrderDto order = orderService.getOrderById(orderId);
 
         model.addAttribute("order", order);
+        model.addAttribute("newOrder", newOrder);
         return "order";
     }
 }

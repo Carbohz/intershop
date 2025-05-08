@@ -8,24 +8,21 @@ import ru.carbohz.intershop.mapper.ItemMapper;
 import ru.carbohz.intershop.model.Action;
 import ru.carbohz.intershop.model.Item;
 import ru.carbohz.intershop.model.Order;
-import ru.carbohz.intershop.repository.CartRepository;
 import ru.carbohz.intershop.repository.ItemRepository;
 import ru.carbohz.intershop.repository.OrderRepository;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class CartServiceImpl implements CartService {
-
-//    private final CartRepository cartRepository;
     private final ItemRepository itemRepository;
     private final OrderRepository orderRepository;
     private final ItemMapper itemMapper;
 
     @Override
+    @Transactional
     public CartItemsDto getCartItems() {
         List<Item> items = itemRepository.findAllByCountIsGreaterThan(0L);
         if (items.isEmpty()) {
@@ -54,6 +51,7 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
+    @Transactional
     public Long createOrder() {
         Order order = new Order();
         List<Item> items = itemRepository.findAll()
@@ -62,6 +60,8 @@ public class CartServiceImpl implements CartService {
                 .toList();
         order.setItems(items);
         Order savedOrder = orderRepository.save(order);
+        // TODO так не получится, потому что у новых заказов будет всегда 0 предметов
+        itemRepository.resetCountForAll();
         return savedOrder.getId();
     }
 }

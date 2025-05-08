@@ -17,3 +17,5 @@ spring:
 logging:
   level:
     org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG
+    org.hibernate: INFO
+  config: classpath:logback-spring.xml

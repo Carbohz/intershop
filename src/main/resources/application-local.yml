@@ -6,3 +6,5 @@ spring:
     properties:
       hibernate:
         format_sql: true
+logging:
+  config: classpath:logback-local.xml

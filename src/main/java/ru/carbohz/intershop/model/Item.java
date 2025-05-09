@@ -23,5 +23,5 @@ public class Item {
     private String imagePath;
 
     @Column(nullable = false)
-    private Integer price;
+    private Long price;
 }

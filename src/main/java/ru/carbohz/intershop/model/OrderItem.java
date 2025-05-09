@@ -23,7 +23,7 @@ public class OrderItem {
     private String imagePath;
 
     @Column(nullable = false)
-    private Integer price;
+    private Long price;
 
     @Column(nullable = false)
     private Long count;

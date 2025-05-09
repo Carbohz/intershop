@@ -15,7 +15,7 @@ CREATE TABLE items
     title       VARCHAR(255)                            NOT NULL,
     description VARCHAR(255)                            NOT NULL,
     image_path  VARCHAR(255)                            NOT NULL,
-    price       INTEGER                                 NOT NULL,
+    price       BIGINT                                  NOT NULL,
     CONSTRAINT pk_items PRIMARY KEY (id)
 );
 
@@ -25,7 +25,7 @@ CREATE TABLE order_items
     title       VARCHAR(255)                            NOT NULL,
     description VARCHAR(255)                            NOT NULL,
     image_path  VARCHAR(255)                            NOT NULL,
-    price       INTEGER                                 NOT NULL,
+    price       BIGINT                                  NOT NULL,
     count       BIGINT                                  NOT NULL,
     order_id    BIGINT,
     CONSTRAINT pk_order_items PRIMARY KEY (id)

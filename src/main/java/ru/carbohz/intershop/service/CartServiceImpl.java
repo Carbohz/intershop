@@ -4,15 +4,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.carbohz.intershop.dto.CartItemsDto;
+import ru.carbohz.intershop.dto.ItemDto;
 import ru.carbohz.intershop.mapper.ItemMapper;
-import ru.carbohz.intershop.model.Action;
-import ru.carbohz.intershop.model.Item;
-import ru.carbohz.intershop.model.Order;
+import ru.carbohz.intershop.model.*;
+import ru.carbohz.intershop.repository.CartRepository;
 import ru.carbohz.intershop.repository.ItemRepository;
 import ru.carbohz.intershop.repository.OrderRepository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -20,21 +21,33 @@ public class CartServiceImpl implements CartService {
     private final ItemRepository itemRepository;
     private final OrderRepository orderRepository;
     private final ItemMapper itemMapper;
+    private final CartRepository cartRepository;
 
     @Override
     @Transactional
     public CartItemsDto getCartItems() {
 //        List<Item> items = itemRepository.findAllByCountIsGreaterThan(0L);
-        List<Item> items = new ArrayList<>();
-        if (items.isEmpty()) {
+        List<Cart> carts = cartRepository.findAllByCountIsGreaterThan(0L);
+        if (carts.isEmpty()) {
             return new CartItemsDto(new ArrayList<>(), 0L, true);
         }
-
         CartItemsDto dto = new CartItemsDto();
         dto.setEmpty(false);
-        dto.setItems(items.stream().map(itemMapper::itemToItemDto).toList());
-        dto.setTotal(items.stream()
-                .map(item -> 2L * item.getPrice())
+        dto.setItems(carts.stream()
+                .map(cart -> {
+                    ItemDto itemDto = new ItemDto();
+                    itemDto.setId(cart.getItem().getId());
+                    itemDto.setTitle(cart.getItem().getTitle());
+                    itemDto.setDescription(cart.getItem().getDescription());
+                    itemDto.setImgPath(cart.getItem().getImagePath());
+                    itemDto.setCount(cart.getCount());
+//                    itemDto.setPrice(cart.getItem().getPrice() * cart.getCount());
+                    itemDto.setPrice(cart.getItem().getPrice());
+                    return itemDto;
+                })
+                .toList());
+        dto.setTotal(carts.stream()
+                .map(cart -> cart.getCount() * cart.getItem().getPrice())
                 .reduce(0L, Long::sum));
 
         return dto;
@@ -43,25 +56,51 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public void changeItemsInCart(Long itemId, Action action) {
-//        switch (action) {
-//            case PLUS -> itemRepository.increaseCount(itemId);
-//            case MINUS -> itemRepository.decreaseCount(itemId);
-//            case DELETE -> itemRepository.resetCount(itemId);
-//            default -> throw new IllegalStateException("Unexpected value: " + action);
-//        }
+        switch (action) {
+            case PLUS -> {
+                Optional<Cart> maybeCart = cartRepository.findByItem_Id(itemId);
+                if (maybeCart.isEmpty()) {
+                    Cart cart = new Cart();
+                    cart.setCount(1L);
+                    itemRepository.findById(itemId).ifPresent(cart::setItem);
+                    cartRepository.save(cart);
+                    return;
+                }
+                cartRepository.increaseCountForItem(itemId);
+            }
+            case MINUS -> cartRepository.decreaseCountForItem(itemId);
+            case DELETE -> cartRepository.resetCountForItem(itemId);
+            default -> throw new IllegalStateException("Unexpected value: " + action);
+        }
     }
 
     @Override
     @Transactional
     public Long createOrder() {
         Order order = new Order();
-        List<Item> items = itemRepository.findAll()
-                .stream()
-                .toList();
-        order.setItems(items);
+
+        List<Cart> carts = cartRepository.findAllByCountIsGreaterThan(0L);
+
+        List<OrderItem> orderItems = carts.stream()
+                .map(cart -> {
+                    OrderItem orderItem = new OrderItem();
+                    orderItem.setTitle(cart.getItem().getTitle());
+                    orderItem.setDescription(cart.getItem().getDescription());
+                    orderItem.setImagePath(cart.getItem().getImagePath());
+                    orderItem.setPrice(cart.getItem().getPrice());
+                    orderItem.setCount(cart.getCount());
+                    orderItem.setOrder(order);
+                    return orderItem;
+                }).toList();
+        order.setOrderItems(orderItems);
+        order.setTotalSum(carts.stream()
+                .map(cart -> cart.getCount() * cart.getItem().getPrice())
+                .reduce(0L, Long::sum));
+
         Order savedOrder = orderRepository.save(order);
-        // TODO так не получится, потому что у новых заказов будет всегда 0 предметов
-//        itemRepository.resetCountForAll();
+
+        cartRepository.deleteAll();
+
         return savedOrder.getId();
     }
 }

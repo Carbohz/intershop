@@ -1,16 +1,28 @@
 package ru.carbohz.intershop.mapper;
 
-import org.mapstruct.InheritInverseConfiguration;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 import ru.carbohz.intershop.dto.ItemDto;
+import ru.carbohz.intershop.model.Cart;
 import ru.carbohz.intershop.model.Item;
+import ru.carbohz.intershop.repository.CartRepository;
 
-@Mapper(componentModel = "spring")
-public interface ItemMapper {
-    @Mapping(target = "imgPath", source =  "item.imagePath")
-    ItemDto itemToItemDto(Item item);
+import java.util.Optional;
 
-    @InheritInverseConfiguration
-    Item itemDtoToItem(ItemDto itemDto);
+@Component
+@RequiredArgsConstructor
+public class ItemMapper {
+    private final CartRepository cartRepository;
+
+    public ItemDto itemToItemDto(Item item) {
+        ItemDto itemDto = new ItemDto();
+        itemDto.setId(item.getId());
+        itemDto.setTitle(item.getTitle());
+        itemDto.setDescription(item.getDescription());
+        itemDto.setImgPath(item.getImagePath());
+        Optional<Cart> maybeCart = cartRepository.findByItem_Id(item.getId());
+        maybeCart.ifPresent(cart -> itemDto.setCount(cart.getCount()));
+        itemDto.setPrice(item.getPrice());
+        return itemDto;
+    }
 }

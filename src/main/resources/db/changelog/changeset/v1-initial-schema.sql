@@ -38,23 +38,8 @@ CREATE TABLE orders
     CONSTRAINT pk_orders PRIMARY KEY (id)
 );
 
-CREATE TABLE orders_items
-(
-    order_id BIGINT NOT NULL,
-    items_id BIGINT NOT NULL
-);
-
-ALTER TABLE orders_items
-    ADD CONSTRAINT uc_orders_items_items UNIQUE (items_id);
-
 ALTER TABLE carts
     ADD CONSTRAINT FK_CARTS_ON_ITEM FOREIGN KEY (item_id) REFERENCES items (id);
 
 ALTER TABLE order_items
     ADD CONSTRAINT FK_ORDER_ITEMS_ON_ORDER FOREIGN KEY (order_id) REFERENCES orders (id);
-
-ALTER TABLE orders_items
-    ADD CONSTRAINT fk_ordite_on_item FOREIGN KEY (items_id) REFERENCES items (id);
-
-ALTER TABLE orders_items
-    ADD CONSTRAINT fk_ordite_on_order FOREIGN KEY (order_id) REFERENCES orders (id);

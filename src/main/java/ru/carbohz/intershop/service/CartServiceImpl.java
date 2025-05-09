@@ -24,7 +24,8 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public CartItemsDto getCartItems() {
-        List<Item> items = itemRepository.findAllByCountIsGreaterThan(0L);
+//        List<Item> items = itemRepository.findAllByCountIsGreaterThan(0L);
+        List<Item> items = new ArrayList<>();
         if (items.isEmpty()) {
             return new CartItemsDto(new ArrayList<>(), 0L, true);
         }
@@ -33,7 +34,7 @@ public class CartServiceImpl implements CartService {
         dto.setEmpty(false);
         dto.setItems(items.stream().map(itemMapper::itemToItemDto).toList());
         dto.setTotal(items.stream()
-                .map(item -> item.getCount() * item.getPrice())
+                .map(item -> 2L * item.getPrice())
                 .reduce(0L, Long::sum));
 
         return dto;
@@ -42,12 +43,12 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public void changeItemsInCart(Long itemId, Action action) {
-        switch (action) {
-            case PLUS -> itemRepository.increaseCount(itemId);
-            case MINUS -> itemRepository.decreaseCount(itemId);
-            case DELETE -> itemRepository.resetCount(itemId);
-            default -> throw new IllegalStateException("Unexpected value: " + action);
-        }
+//        switch (action) {
+//            case PLUS -> itemRepository.increaseCount(itemId);
+//            case MINUS -> itemRepository.decreaseCount(itemId);
+//            case DELETE -> itemRepository.resetCount(itemId);
+//            default -> throw new IllegalStateException("Unexpected value: " + action);
+//        }
     }
 
     @Override
@@ -56,12 +57,11 @@ public class CartServiceImpl implements CartService {
         Order order = new Order();
         List<Item> items = itemRepository.findAll()
                 .stream()
-                .filter(item -> item.getCount() > 0)
                 .toList();
         order.setItems(items);
         Order savedOrder = orderRepository.save(order);
         // TODO так не получится, потому что у новых заказов будет всегда 0 предметов
-        itemRepository.resetCountForAll();
+//        itemRepository.resetCountForAll();
         return savedOrder.getId();
     }
 }

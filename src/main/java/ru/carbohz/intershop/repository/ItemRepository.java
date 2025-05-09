@@ -14,21 +14,21 @@ import java.util.List;
 public interface ItemRepository extends JpaRepository<Item, Long> {
     List<Item> findByTitleContainingOrDescriptionContainingAllIgnoreCase(String title, String description, Pageable pageable);
 
-    @Modifying
-    @Query("UPDATE Item i SET i.count = i.count + 1 WHERE i.id = :id")
-    void increaseCount(@Param("id") Long id);
-
-    @Modifying
-    @Query("UPDATE Item i SET i.count = i.count - 1 WHERE i.id = :id")
-    void decreaseCount(@Param("id") Long id);
-
-    @Modifying
-    @Query("UPDATE Item i SET i.count = 0 WHERE i.id = :id")
-    void resetCount(@Param("id") Long id);
-
-    @Modifying
-    @Query("UPDATE Item i SET i.count = 0")
-    void resetCountForAll();
-
-    List<Item> findAllByCountIsGreaterThan(long count);
+//    @Modifying
+//    @Query("UPDATE Item i SET i.count = i.count + 1 WHERE i.id = :id")
+//    void increaseCount(@Param("id") Long id);
+//
+//    @Modifying
+//    @Query("UPDATE Item i SET i.count = i.count - 1 WHERE i.id = :id")
+//    void decreaseCount(@Param("id") Long id);
+//
+//    @Modifying
+//    @Query("UPDATE Item i SET i.count = 0 WHERE i.id = :id")
+//    void resetCount(@Param("id") Long id);
+//
+//    @Modifying
+//    @Query("UPDATE Item i SET i.count = 0")
+//    void resetCountForAll();
+//
+//    List<Item> findAllByCountIsGreaterThan(long count);
 }

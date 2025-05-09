@@ -17,7 +17,7 @@ public class OrderMapper {
                 .map(itemMapper::itemToItemDto)
                 .toList());
         orderDto.setTotalSum(order.getItems().stream()
-                .map(item -> item.getPrice() * item.getCount())
+                .map(item -> item.getPrice() * 2L)
                 .reduce(0L, Long::sum));
         return orderDto;
     }

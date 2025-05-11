@@ -16,7 +16,6 @@ import ru.carbohz.intershop.model.Item;
 import ru.carbohz.intershop.model.SortOption;
 import ru.carbohz.intershop.repository.CartRepository;
 import ru.carbohz.intershop.repository.ItemRepository;
-import ru.carbohz.intershop.service.CartService;
 import ru.carbohz.intershop.service.ItemService;
 import ru.carbohz.intershop.service.PageableService;
 
@@ -88,7 +87,7 @@ public class ItemServiceImpl implements ItemService {
         Sort sortOption;
         switch (sort) {
             case NO -> sortOption =  Sort.unsorted();
-            case ALPHA -> sortOption = Sort.by(Sort.Direction.ASC, "title");
+            case ALPHA -> sortOption = Sort.by("title");
             case PRICE -> sortOption = Sort.by("price");
             default -> throw new RuntimeException("Invalid sort option");
         }

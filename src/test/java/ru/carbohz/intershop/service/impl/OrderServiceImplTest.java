@@ -7,6 +7,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import ru.carbohz.intershop.dto.ItemDto;
 import ru.carbohz.intershop.dto.OrderDto;
 import ru.carbohz.intershop.exception.OrderNotFoundException;
+import ru.carbohz.intershop.mapper.OrderItemMapper;
 import ru.carbohz.intershop.mapper.OrderMapper;
 import ru.carbohz.intershop.model.Order;
 import ru.carbohz.intershop.model.OrderItem;
@@ -22,7 +23,8 @@ import static org.mockito.Mockito.*;
 
 @SpringJUnitConfig(classes = {
         OrderServiceImpl.class,
-        OrderMapper.class
+        OrderMapper.class,
+        OrderItemMapper.class
 })
 class OrderServiceImplTest {
     @Autowired

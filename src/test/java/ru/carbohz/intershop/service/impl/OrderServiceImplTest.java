@@ -42,7 +42,7 @@ class OrderServiceImplTest {
         // create order 2
         Order order2 = new Order();
         order2.setId(2L);
-        order2.setTotalSum(1337L);
+        order2.setTotalSum(837L);
 
         List<OrderItem> orderItems2 = new ArrayList<>();
 

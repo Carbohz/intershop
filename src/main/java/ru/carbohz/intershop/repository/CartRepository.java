@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import ru.carbohz.intershop.model.Cart;
+import ru.carbohz.intershop.model.Item;
 
 import java.util.Optional;
 
@@ -20,4 +21,6 @@ public interface CartRepository extends JpaRepository<Cart, Long> {
     @Modifying
     @Query("UPDATE Cart c SET c.count = c.count - 1 WHERE c.item.id = :itemId")
     void decreaseCountForItem(@Param("itemId") Long itemId);
+
+    Long item(Item item);
 }

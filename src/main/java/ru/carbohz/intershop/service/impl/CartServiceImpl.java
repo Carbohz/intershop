@@ -4,12 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.carbohz.intershop.dto.CartItemsDto;
-import ru.carbohz.intershop.dto.ItemDto;
-import ru.carbohz.intershop.mapper.ItemMapper;
+import ru.carbohz.intershop.mapper.CartMapper;
 import ru.carbohz.intershop.model.Action;
 import ru.carbohz.intershop.model.Cart;
 import ru.carbohz.intershop.model.Order;
-import ru.carbohz.intershop.model.OrderItem;
 import ru.carbohz.intershop.repository.CartRepository;
 import ru.carbohz.intershop.repository.ItemRepository;
 import ru.carbohz.intershop.repository.OrderRepository;
@@ -25,7 +23,7 @@ public class CartServiceImpl implements CartService {
     private final ItemRepository itemRepository;
     private final OrderRepository orderRepository;
     private final CartRepository cartRepository;
-    private final ItemMapper itemMapper;
+    private final CartMapper cartMapper;
 
     @Override
     @Transactional
@@ -34,16 +32,8 @@ public class CartServiceImpl implements CartService {
         if (carts.isEmpty()) {
             return new CartItemsDto(new ArrayList<>(), 0L, true);
         }
-        CartItemsDto dto = new CartItemsDto();
-        dto.setEmpty(false);
-        dto.setItems(carts.stream()
-                .map(itemMapper::cartToItemDto)
-                .toList());
-        dto.setTotal(carts.stream()
-                .map(cart -> cart.getCount() * cart.getItem().getPrice())
-                .reduce(0L, Long::sum));
 
-        return dto;
+        return cartMapper.toCartItemsDto(carts);
     }
 
     @Override
@@ -83,25 +73,9 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public Long createOrder() {
-        Order order = new Order();
-
         List<Cart> carts = cartRepository.findAll();
 
-        List<OrderItem> orderItems = carts.stream()
-                .map(cart -> {
-                    OrderItem orderItem = new OrderItem();
-                    orderItem.setTitle(cart.getItem().getTitle());
-                    orderItem.setDescription(cart.getItem().getDescription());
-                    orderItem.setImagePath(cart.getItem().getImagePath());
-                    orderItem.setPrice(cart.getItem().getPrice());
-                    orderItem.setCount(cart.getCount());
-                    orderItem.setOrder(order);
-                    return orderItem;
-                }).toList();
-        order.setOrderItems(orderItems);
-        order.setTotalSum(carts.stream()
-                .map(cart -> cart.getCount() * cart.getItem().getPrice())
-                .reduce(0L, Long::sum));
+        Order order = cartMapper.toOrder(carts);
 
         Order savedOrder = orderRepository.save(order);
 

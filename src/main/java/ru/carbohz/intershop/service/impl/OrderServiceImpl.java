@@ -1,4 +1,4 @@
-package ru.carbohz.intershop.service;
+package ru.carbohz.intershop.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -6,6 +6,7 @@ import ru.carbohz.intershop.dto.OrderDto;
 import ru.carbohz.intershop.mapper.OrderMapper;
 import ru.carbohz.intershop.model.Order;
 import ru.carbohz.intershop.repository.OrderRepository;
+import ru.carbohz.intershop.service.OrderService;
 
 import java.util.List;
 import java.util.Optional;

@@ -1,4 +1,4 @@
-package ru.carbohz.intershop.service;
+package ru.carbohz.intershop.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -12,6 +12,7 @@ import ru.carbohz.intershop.model.OrderItem;
 import ru.carbohz.intershop.repository.CartRepository;
 import ru.carbohz.intershop.repository.ItemRepository;
 import ru.carbohz.intershop.repository.OrderRepository;
+import ru.carbohz.intershop.service.CartService;
 
 import java.util.ArrayList;
 import java.util.List;

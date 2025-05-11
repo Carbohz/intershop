@@ -1,5 +1,4 @@
-package ru.carbohz.intershop.controller;
-
+package ru.carbohz.intershop.controller.converter;
 
 import org.springframework.stereotype.Component;
 import ru.carbohz.intershop.model.Action;
@@ -14,8 +13,7 @@ public class StringToActionConverter implements Converter<String, Action> {
         try {
             return Action.valueOf(source.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid Action. Valid values: " + Arrays.toString(Action.values())
-            );
+            throw new IllegalArgumentException("Invalid Action. Valid values: " + Arrays.toString(Action.values()));
         }
     }
 }

@@ -5,8 +5,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.carbohz.intershop.dto.CartItemsDto;
 import ru.carbohz.intershop.dto.ItemDto;
-import ru.carbohz.intershop.mapper.ItemMapper;
-import ru.carbohz.intershop.model.*;
+import ru.carbohz.intershop.model.Action;
+import ru.carbohz.intershop.model.Cart;
+import ru.carbohz.intershop.model.Order;
+import ru.carbohz.intershop.model.OrderItem;
 import ru.carbohz.intershop.repository.CartRepository;
 import ru.carbohz.intershop.repository.ItemRepository;
 import ru.carbohz.intershop.repository.OrderRepository;
@@ -20,14 +22,12 @@ import java.util.Optional;
 public class CartServiceImpl implements CartService {
     private final ItemRepository itemRepository;
     private final OrderRepository orderRepository;
-    private final ItemMapper itemMapper;
     private final CartRepository cartRepository;
 
     @Override
     @Transactional
     public CartItemsDto getCartItems() {
-//        List<Item> items = itemRepository.findAllByCountIsGreaterThan(0L);
-        List<Cart> carts = cartRepository.findAllByCountIsGreaterThan(0L);
+        List<Cart> carts = cartRepository.findAll();
         if (carts.isEmpty()) {
             return new CartItemsDto(new ArrayList<>(), 0L, true);
         }
@@ -41,7 +41,6 @@ public class CartServiceImpl implements CartService {
                     itemDto.setDescription(cart.getItem().getDescription());
                     itemDto.setImgPath(cart.getItem().getImagePath());
                     itemDto.setCount(cart.getCount());
-//                    itemDto.setPrice(cart.getItem().getPrice() * cart.getCount());
                     itemDto.setPrice(cart.getItem().getPrice());
                     return itemDto;
                 })
@@ -68,8 +67,21 @@ public class CartServiceImpl implements CartService {
                 }
                 cartRepository.increaseCountForItem(itemId);
             }
-            case MINUS -> cartRepository.decreaseCountForItem(itemId);
-            case DELETE -> cartRepository.resetCountForItem(itemId);
+            case MINUS -> {
+                Optional<Cart> maybeCart = cartRepository.findByItem_Id(itemId);
+                if (maybeCart.isEmpty()) {
+                    return;
+                }
+
+                Cart cart = maybeCart.get();
+                if (cart.getCount() == 1L) {
+                    cartRepository.deleteByItem_Id(itemId);
+                    return;
+                }
+
+                cartRepository.decreaseCountForItem(itemId);
+            }
+            case DELETE -> cartRepository.deleteByItem_Id(itemId);
             default -> throw new IllegalStateException("Unexpected value: " + action);
         }
     }
@@ -79,7 +91,7 @@ public class CartServiceImpl implements CartService {
     public Long createOrder() {
         Order order = new Order();
 
-        List<Cart> carts = cartRepository.findAllByCountIsGreaterThan(0L);
+        List<Cart> carts = cartRepository.findAll();
 
         List<OrderItem> orderItems = carts.stream()
                 .map(cart -> {

@@ -2,16 +2,21 @@ package ru.carbohz.intershop.service.impl;
 
 import com.google.common.collect.Lists;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import ru.carbohz.intershop.dto.ItemDto;
 import ru.carbohz.intershop.dto.PageableDto;
 import ru.carbohz.intershop.dto.PageableItemsDto;
+import ru.carbohz.intershop.exception.ItemNotFoundException;
 import ru.carbohz.intershop.mapper.ItemMapper;
+import ru.carbohz.intershop.model.Cart;
 import ru.carbohz.intershop.model.Item;
 import ru.carbohz.intershop.model.SortOption;
+import ru.carbohz.intershop.repository.CartRepository;
 import ru.carbohz.intershop.repository.ItemRepository;
+import ru.carbohz.intershop.service.CartService;
 import ru.carbohz.intershop.service.ItemService;
 import ru.carbohz.intershop.service.PageableService;
 
@@ -20,21 +25,25 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ItemServiceImpl implements ItemService {
 
     private final ItemRepository itemRepository;
     private final ItemMapper itemMapper;
     private final PageableService pageableService;
+    private final CartRepository cartRepository;
 
     @Override
     public ItemDto findItemById(Long id) {
         Optional<Item> maybeItem = itemRepository.findById(id);
         if (maybeItem.isEmpty()) {
-            throw new RuntimeException("Item not found");
+            String message =  "Item with id %d not found".formatted(id);
+            log.error(message);
+            throw new ItemNotFoundException(message);
         }
         Item item = maybeItem.get();
 
-        return itemMapper.itemToItemDto(item);
+        return toItemDto(item);
     }
 
     @Override
@@ -51,7 +60,7 @@ public class ItemServiceImpl implements ItemService {
 
         int rowSize = 5;
         List<List<ItemDto>> itemDtos = Lists.partition(
-                found.stream().map(itemMapper::itemToItemDto).toList(), rowSize);
+                found.stream().map(this::toItemDto).toList(), rowSize);
         pageableItemsDto.setItems(itemDtos);
 
         long total = itemRepository.count();
@@ -64,6 +73,15 @@ public class ItemServiceImpl implements ItemService {
         pageableItemsDto.setPageable(pageableDto);
 
         return pageableItemsDto;
+    }
+
+    private ItemDto toItemDto(Item item) {
+        Optional<Cart> maybeCart = cartRepository.findByItem_Id(item.getId());
+        if (maybeCart.isPresent()) {
+            return itemMapper.itemToItemDto(item, maybeCart.get());
+        }
+
+        return itemMapper.itemToItemDto(item);
     }
 
     private static Sort getSortOption(SortOption sort) {

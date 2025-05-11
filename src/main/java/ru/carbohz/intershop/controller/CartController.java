@@ -29,7 +29,6 @@ public class CartController {
     @PostMapping("/items/{id}")
     public String changeItemsCount(@PathVariable("id") Long itemId, @RequestParam Action action) {
         cartService.changeItemsInCart(itemId, action);
-
         return "redirect:/cart/items";
     }
 

@@ -21,11 +21,11 @@ public class ItemController {
     private final CartService cartService;
 
     @GetMapping("/main/items")
-    public String getItems(@RequestParam(name = "search", defaultValue = "") String search,
-                           @RequestParam(name = "sort", defaultValue = "NO") SortOption sort,
-                           @RequestParam(name = "pageSize", defaultValue = "10") int pageSize,
-                           @RequestParam(name = "pageNumber", defaultValue = "1") int pageNumber,
-                           Model model) {
+    public String showItems(@RequestParam(name = "search", defaultValue = "") String search,
+                            @RequestParam(name = "sort", defaultValue = "NO") SortOption sort,
+                            @RequestParam(name = "pageSize", defaultValue = "10") int pageSize,
+                            @RequestParam(name = "pageNumber", defaultValue = "1") int pageNumber,
+                            Model model) {
         PageableItemsDto pageableItems = itemService.getPageableItems(search, sort, pageSize, pageNumber);
 
         model.addAttribute("items", pageableItems.getItems());
@@ -37,13 +37,13 @@ public class ItemController {
     }
 
     @PostMapping("/main/items/{id}")
-    public String addItemToCart(@PathVariable Long id, @RequestParam Action action) {
+    public String addItemToCartFromMainPage(@PathVariable Long id, @RequestParam Action action) {
         cartService.changeItemsInCart(id, action);
         return "redirect:/main/items";
     }
 
     @GetMapping("/items/{id}")
-    public String getItem(@PathVariable Long id, final Model model) {
+    public String getItemById(@PathVariable Long id, final Model model) {
         ItemDto itemDto = itemService.findItemById(id);
 
         model.addAttribute("item", itemDto);
@@ -52,7 +52,7 @@ public class ItemController {
     }
 
     @PostMapping("/items/{id}")
-    public String addItemToCartV2(@PathVariable Long id, @RequestParam Action action) {
+    public String addItemToCartFromItemPage(@PathVariable Long id, @RequestParam Action action) {
         cartService.changeItemsInCart(id, action);
         return "redirect:/items/" + id;
     }

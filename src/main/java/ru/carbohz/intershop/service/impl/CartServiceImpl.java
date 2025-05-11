@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.carbohz.intershop.dto.CartItemsDto;
 import ru.carbohz.intershop.dto.ItemDto;
+import ru.carbohz.intershop.mapper.ItemMapper;
 import ru.carbohz.intershop.model.Action;
 import ru.carbohz.intershop.model.Cart;
 import ru.carbohz.intershop.model.Order;
@@ -24,6 +25,7 @@ public class CartServiceImpl implements CartService {
     private final ItemRepository itemRepository;
     private final OrderRepository orderRepository;
     private final CartRepository cartRepository;
+    private final ItemMapper itemMapper;
 
     @Override
     @Transactional
@@ -35,16 +37,7 @@ public class CartServiceImpl implements CartService {
         CartItemsDto dto = new CartItemsDto();
         dto.setEmpty(false);
         dto.setItems(carts.stream()
-                .map(cart -> {
-                    ItemDto itemDto = new ItemDto();
-                    itemDto.setId(cart.getItem().getId());
-                    itemDto.setTitle(cart.getItem().getTitle());
-                    itemDto.setDescription(cart.getItem().getDescription());
-                    itemDto.setImgPath(cart.getItem().getImagePath());
-                    itemDto.setCount(cart.getCount());
-                    itemDto.setPrice(cart.getItem().getPrice());
-                    return itemDto;
-                })
+                .map(itemMapper::cartToItemDto)
                 .toList());
         dto.setTotal(carts.stream()
                 .map(cart -> cart.getCount() * cart.getItem().getPrice())

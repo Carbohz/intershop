@@ -11,15 +11,8 @@ import ru.carbohz.intershop.model.Item;
 public class ItemMapper {
 
     public ItemDto itemToItemDto(Item item, Cart cart) {
-        ItemDto itemDto = new ItemDto();
-
-        itemDto.setId(item.getId());
-        itemDto.setTitle(item.getTitle());
-        itemDto.setDescription(item.getDescription());
-        itemDto.setImgPath(item.getImagePath());
+        ItemDto itemDto = itemToItemDto(item);
         itemDto.setCount(cart.getCount());
-        itemDto.setPrice(item.getPrice());
-
         return itemDto;
     }
 
@@ -33,5 +26,9 @@ public class ItemMapper {
         itemDto.setPrice(item.getPrice());
 
         return itemDto;
+    }
+
+    public ItemDto cartToItemDto(Cart cart) {
+        return itemToItemDto(cart.getItem(), cart);
     }
 }

@@ -9,8 +9,6 @@ import ru.carbohz.intershop.model.Order;
 @Component
 @RequiredArgsConstructor
 public class OrderMapper {
-    private final ItemMapper itemMapper;
-
     public OrderDto toOrderDto(Order order) {
         OrderDto orderDto = new OrderDto();
         orderDto.setId(order.getId());
@@ -27,7 +25,7 @@ public class OrderMapper {
                 })
                 .toList());
         orderDto.setTotalSum(order.getOrderItems().stream()
-                .map(item -> item.getPrice() * 2L)
+                .map(orderItem -> orderItem.getPrice() * orderItem.getCount())
                 .reduce(0L, Long::sum));
         return orderDto;
     }

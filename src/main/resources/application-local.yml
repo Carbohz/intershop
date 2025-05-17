@@ -1,4 +1,8 @@
 spring:
+  docker:
+    compose:
+      enabled: true
+      file: compose-local.yaml
   jpa:
     show-sql: true
     hibernate:

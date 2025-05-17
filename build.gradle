@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.4.5'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'com.google.cloud.tools.jib' version '3.4.5'
 }
 
 group = 'ru.carbohz'
@@ -48,4 +49,23 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+jib {
+	from {
+		image = 'eclipse-temurin:21-jre-jammy' // Base image (Java 21)
+	}
+	to {
+		image = 'carbohz-intershop' // Your image name
+		tags = ['v1.0'] // Optional tags
+	}
+	container {
+		ports = ['8080'] // Expose port 8080 (Spring Boot default)
+		creationTime = 'USE_CURRENT_TIMESTAMP' // Optional
+		mainClass = 'ru.carbohz.intershop.IntershopApplication'
+	}
+}
+
+tasks.named('jibDockerBuild') {
+	dependsOn(tasks.named('bootJar'))
 }

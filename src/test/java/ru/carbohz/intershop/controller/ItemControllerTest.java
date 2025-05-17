@@ -6,13 +6,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import ru.carbohz.intershop.dto.ItemDto;
 import ru.carbohz.intershop.dto.PageableDto;
 import ru.carbohz.intershop.dto.PageableItemsDto;
+import ru.carbohz.intershop.model.Action;
 import ru.carbohz.intershop.model.SortOption;
 import ru.carbohz.intershop.service.CartService;
 import ru.carbohz.intershop.service.ItemService;
 
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -62,28 +64,63 @@ public class ItemControllerTest {
                 .andExpect(model().attribute("paging", pageableItems.getPageable()))
                 .andExpect(model().attribute("search", search))
                 .andDo(print());
+
+        verify(itemService).getPageableItems(search, sort, pageSize, pageNumber);
+        verifyNoMoreInteractions(itemService);
+        verifyNoInteractions(cartService);
     }
 
     @Test
     public void addItemToCartFromMainPage() throws Exception {
-        mockMvc.perform(post("/main/items/{0}", "0")
-                        .param("action", ""))
-                .andExpect(status().isOk())
+        Long itemId = 1L;
+        Action action = Action.PLUS;
+        doNothing().when(cartService).changeItemsInCart(itemId, action);
+
+        mockMvc.perform(post("/main/items/{itemId}", itemId)
+                        .param("action", action.toString()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(view().name("redirect:/main/items"))
+                .andExpect(redirectedUrl("/main/items"))
                 .andDo(print());
+
+        verify(cartService, times(1)).changeItemsInCart(itemId, action);
+        verifyNoMoreInteractions(cartService);
+        verifyNoInteractions(itemService);
     }
 
     @Test
     public void getItemById() throws Exception {
-        mockMvc.perform(get("/items/{0}", "0"))
+        Long itemId = 1L;
+        ItemDto itemDto = new ItemDto();
+        when(itemService.findItemById(itemId)).thenReturn(itemDto);
+
+        mockMvc.perform(get("/items/{itemId}", itemId))
                 .andExpect(status().isOk())
+                .andExpect(model().attribute("item", itemDto))
+                .andExpect(view().name("item"))
                 .andDo(print());
+
+        verify(itemService, times(1)).findItemById(itemId);
+        verifyNoMoreInteractions(itemService);
+        verifyNoInteractions(cartService);
     }
 
     @Test
     public void addItemToCartFromItemPage() throws Exception {
-        mockMvc.perform(post("/items/{0}", "0")
-                        .param("action", ""))
-                .andExpect(status().isOk())
+        Long itemId = 1L;
+        Action action = Action.MINUS;
+
+        doNothing().when(cartService).changeItemsInCart(itemId, action);
+
+        mockMvc.perform(post("/items/{itemId}", itemId)
+                        .param("action", action.toString()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(view().name("redirect:/items/" + itemId))
+                .andExpect(redirectedUrl("/items/" + itemId))
                 .andDo(print());
+
+        verify(cartService, times(1)).changeItemsInCart(itemId, action);
+        verifyNoMoreInteractions(cartService);
+        verifyNoInteractions(itemService);
     }
 }

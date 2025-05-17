@@ -29,7 +29,9 @@ public class OrderController {
     }
 
     @GetMapping("/{id}")
-    public String getOrderPage(Model model, @PathVariable("id") long orderId, @RequestParam(defaultValue = "false") boolean newOrder) {
+    public String getOrderPage(Model model,
+                               @PathVariable("id") long orderId,
+                               @RequestParam(defaultValue = "false") boolean newOrder) {
         OrderDto order = orderService.getOrderById(orderId);
 
         model.addAttribute("order", order);

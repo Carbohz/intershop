@@ -41,6 +41,7 @@ public class CartMapper {
     private OrderItem toOrderItem(Cart cart, Order order) {
         OrderItem orderItem = new OrderItem();
 
+        orderItem.setItemId(cart.getItem().getId());
         orderItem.setTitle(cart.getItem().getTitle());
         orderItem.setDescription(cart.getItem().getDescription());
         orderItem.setImagePath(cart.getItem().getImagePath());

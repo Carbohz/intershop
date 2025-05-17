@@ -14,6 +14,9 @@ public class OrderItem {
     private Long id;
 
     @Column(nullable = false)
+    private Long itemId;
+
+    @Column(nullable = false)
     private String title;
 
     @Column(nullable = false)

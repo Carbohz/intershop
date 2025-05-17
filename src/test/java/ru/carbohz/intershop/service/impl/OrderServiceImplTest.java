@@ -48,6 +48,7 @@ class OrderServiceImplTest {
 
         OrderItem orderItem3 = new OrderItem();
         orderItem3.setId(3L);
+        orderItem3.setItemId(1440L);
         orderItem3.setTitle("Item 3");
         orderItem3.setDescription("Item 3 description");
         orderItem3.setImagePath("Item 3 image path");
@@ -75,7 +76,7 @@ class OrderServiceImplTest {
         List<ItemDto> itemDtos1 = orderDto1.items();
 
         ItemDto itemDto1 = itemDtos1.get(0);
-        assertThat(itemDto1.getId()).isEqualTo(1L);
+        assertThat(itemDto1.getId()).isEqualTo(10L);
         assertThat(itemDto1.getTitle()).isEqualTo("Item 1");
         assertThat(itemDto1.getDescription()).isEqualTo("Item 1 description");
         assertThat(itemDto1.getImgPath()).isEqualTo("Item 1 image path");
@@ -83,7 +84,7 @@ class OrderServiceImplTest {
         assertThat(itemDto1.getPrice()).isEqualTo(100000L);
 
         ItemDto itemDto2 = itemDtos1.get(1);
-        assertThat(itemDto2.getId()).isEqualTo(2L);
+        assertThat(itemDto2.getId()).isEqualTo(14L);
         assertThat(itemDto2.getTitle()).isEqualTo("Item 2");
         assertThat(itemDto2.getDescription()).isEqualTo("Item 2 description");
         assertThat(itemDto2.getImgPath()).isEqualTo("Item 2 image path");
@@ -97,7 +98,7 @@ class OrderServiceImplTest {
         List<ItemDto> itemDtos2 = orderDto2.items();
 
         ItemDto itemDto3 = itemDtos2.get(0);
-        assertThat(itemDto3.getId()).isEqualTo(3L);
+        assertThat(itemDto3.getId()).isEqualTo(1440L);
         assertThat(itemDto3.getTitle()).isEqualTo("Item 3");
         assertThat(itemDto3.getDescription()).isEqualTo("Item 3 description");
         assertThat(itemDto3.getImgPath()).isEqualTo("Item 3 image path");
@@ -122,7 +123,7 @@ class OrderServiceImplTest {
         List<ItemDto> itemDtos1 = orderDto1.items();
 
         ItemDto itemDto1 = itemDtos1.get(0);
-        assertThat(itemDto1.getId()).isEqualTo(1L);
+        assertThat(itemDto1.getId()).isEqualTo(10L);
         assertThat(itemDto1.getTitle()).isEqualTo("Item 1");
         assertThat(itemDto1.getDescription()).isEqualTo("Item 1 description");
         assertThat(itemDto1.getImgPath()).isEqualTo("Item 1 image path");
@@ -130,7 +131,7 @@ class OrderServiceImplTest {
         assertThat(itemDto1.getPrice()).isEqualTo(100000L);
 
         ItemDto itemDto2 = itemDtos1.get(1);
-        assertThat(itemDto2.getId()).isEqualTo(2L);
+        assertThat(itemDto2.getId()).isEqualTo(14L);
         assertThat(itemDto2.getTitle()).isEqualTo("Item 2");
         assertThat(itemDto2.getDescription()).isEqualTo("Item 2 description");
         assertThat(itemDto2.getImgPath()).isEqualTo("Item 2 image path");
@@ -160,6 +161,7 @@ class OrderServiceImplTest {
 
         OrderItem orderItem1 = new OrderItem();
         orderItem1.setId(1L);
+        orderItem1.setItemId(10L);
         orderItem1.setTitle("Item 1");
         orderItem1.setDescription("Item 1 description");
         orderItem1.setImagePath("Item 1 image path");
@@ -171,6 +173,7 @@ class OrderServiceImplTest {
 
         OrderItem orderItem2 = new OrderItem();
         orderItem2.setId(2L);
+        orderItem2.setItemId(14L);
         orderItem2.setTitle("Item 2");
         orderItem2.setDescription("Item 2 description");
         orderItem2.setImagePath("Item 2 image path");

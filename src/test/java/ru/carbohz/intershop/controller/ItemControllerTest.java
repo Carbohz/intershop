@@ -1,6 +1,5 @@
 package ru.carbohz.intershop.controller;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -31,11 +30,6 @@ public class ItemControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
-
-    @BeforeEach
-    public void setup() {
-
-    }
 
     @Test
     public void showItems() throws Exception {

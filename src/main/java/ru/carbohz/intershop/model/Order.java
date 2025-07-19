@@ -1,24 +1,26 @@
 package ru.carbohz.intershop.model;
 
-import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
 @Table(name = "orders")
 @Getter
 @Setter
 public class Order {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column
     private Long totalSum;
 
-    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<OrderItem> orderItems = new ArrayList<>();
+    // TODO
+//    @Transient
+//    private List<OrderItem> orderItems = new ArrayList<>();
 }

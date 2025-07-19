@@ -6,6 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 import ru.carbohz.intershop.dto.ItemDto;
 import ru.carbohz.intershop.dto.PageableDto;
 import ru.carbohz.intershop.dto.PageableItemsDto;
@@ -19,6 +23,7 @@ import ru.carbohz.intershop.repository.ItemRepository;
 import ru.carbohz.intershop.service.ItemService;
 import ru.carbohz.intershop.service.PageableService;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,54 +38,101 @@ public class ItemServiceImpl implements ItemService {
     private final CartRepository cartRepository;
 
     @Override
-    public ItemDto findItemById(Long id) {
-        Optional<Item> maybeItem = itemRepository.findById(id);
-        if (maybeItem.isEmpty()) {
-            String message =  "Item with id %d not found".formatted(id);
-            log.error(message);
-            throw new ItemNotFoundException(message);
-        }
-        Item item = maybeItem.get();
-
-        return toItemDto(item);
+    public Mono<ItemDto> findItemById(Long id) {
+//        Optional<Item> maybeItem = itemRepository.findById(id);
+//        if (maybeItem.isEmpty()) {
+//            String message =  "Item with id %d not found".formatted(id);
+//            log.error(message);
+//            throw new ItemNotFoundException(message);
+//        }
+//        Item item = maybeItem.get();
+//
+//        return toItemDto(item);
+        return itemRepository.findById(id)
+                .flatMap(this::toItemDto)
+                .switchIfEmpty(Mono.defer(() -> {
+                    String message = "Item with id %d not found".formatted(id);
+                    log.error(message);
+                    return Mono.error(new ItemNotFoundException(message));
+                }))
+                .onErrorResume(e -> {
+                    log.error("Error finding item {}: {}", id, e.getMessage());
+                    return Mono.error(e);
+                });
     }
 
     @Override
-    public PageableItemsDto getPageableItems(String search, SortOption sort, int pageSize, int pageNumber) {
+    public Mono<PageableItemsDto> getPageableItems(String search, SortOption sort, int pageSize, int pageNumber) {
+//        Sort sortOption = getSortOption(sort);
+//        PageRequest pageRequest = PageRequest.of(pageNumber - 1, pageSize, sortOption);
+//        List<Item> found;
+//        if (!search.isBlank()) {
+//            found = itemRepository.findByTitleContainingOrDescriptionContainingAllIgnoreCase(search, search, pageRequest);
+//        } else {
+//            found = itemRepository.findAll(pageRequest).stream().toList();
+//        }
+//        PageableItemsDto pageableItemsDto = new PageableItemsDto();
+//
+//        int rowSize = 5;
+//        List<List<ItemDto>> itemDtos = Lists.partition(
+//                found.stream().map(this::toItemDto).toList(), rowSize);
+//        pageableItemsDto.setItems(itemDtos);
+//
+//        long total = itemRepository.count();
+//        PageableDto pageableDto = new PageableDto();
+//        pageableDto.setPageSize(pageSize);
+//        pageableDto.setPageNumber(pageNumber);
+//        pageableDto.setHasPrevious(pageableService.hasPrevious(pageRequest));
+//        pageableDto.setHasNext(pageableService.hasNext(pageRequest, total));
+//
+//        pageableItemsDto.setPageable(pageableDto);
+//
+//        return pageableItemsDto;
+
         Sort sortOption = getSortOption(sort);
+        String sortOptionStr = getSortOptionStr(sort);
         PageRequest pageRequest = PageRequest.of(pageNumber - 1, pageSize, sortOption);
-        List<Item> found;
-        if (!search.isBlank()) {
-            found = itemRepository.findByTitleContainingOrDescriptionContainingAllIgnoreCase(search, search, pageRequest);
-        } else {
-            found = itemRepository.findAll(pageRequest).stream().toList();
-        }
-        PageableItemsDto pageableItemsDto = new PageableItemsDto();
 
-        int rowSize = 5;
-        List<List<ItemDto>> itemDtos = Lists.partition(
-                found.stream().map(this::toItemDto).toList(), rowSize);
-        pageableItemsDto.setItems(itemDtos);
+        return (search.isBlank() ? itemRepository.count() :
+                itemRepository.countByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(search))
+                .flatMap(totalCount -> {
+                    long offset = pageRequest.getOffset();
 
-        long total = itemRepository.count();
-        PageableDto pageableDto = new PageableDto();
-        pageableDto.setPageSize(pageSize);
-        pageableDto.setPageNumber(pageNumber);
-        pageableDto.setHasPrevious(pageableService.hasPrevious(pageRequest));
-        pageableDto.setHasNext(pageableService.hasNext(pageRequest, total));
+                    Flux<Item> items = search.isBlank() ?
+                            itemRepository.findAll(pageSize, offset) :
+                            itemRepository.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
+                                    search, sortOptionStr, pageSize, offset);
 
-        pageableItemsDto.setPageable(pageableDto);
+                    return items.flatMap(this::toItemDto)
+                            .collectList()
+                            .map(itemDtos -> {
+                                PageableItemsDto dto = new PageableItemsDto();
+                                dto.setItems(partitionRows(itemDtos, 5));
 
-        return pageableItemsDto;
+                                PageableDto pageable = new PageableDto();
+                                pageable.setPageSize(pageSize);
+                                pageable.setPageNumber(pageNumber);
+                                pageable.setHasPrevious(pageNumber > 1);
+                                pageable.setHasNext((offset + pageSize) < totalCount);
+
+                                dto.setPageable(pageable);
+                                return dto;
+                            });
+                });
     }
 
-    private ItemDto toItemDto(Item item) {
-        Optional<Cart> maybeCart = cartRepository.findByItem_Id(item.getId());
-        if (maybeCart.isPresent()) {
-            return itemMapper.itemToItemDto(item, maybeCart.get());
+    private List<List<ItemDto>> partitionRows(List<ItemDto> items, int rowSize) {
+        List<List<ItemDto>> result = new ArrayList<>();
+        for (int i = 0; i < items.size(); i += rowSize) {
+            result.add(items.subList(i, Math.min(i + rowSize, items.size())));
         }
+        return result;
+    }
 
-        return itemMapper.itemToItemDto(item);
+    private Mono<ItemDto> toItemDto(Item item) {
+        return cartRepository.findByItem_Id(item.getId())
+                .flatMap(cart -> itemMapper.toItemDto(cart, item))
+                .switchIfEmpty(itemMapper.toItemDto(item));
     }
 
     private static Sort getSortOption(SortOption sort) {
@@ -89,6 +141,17 @@ public class ItemServiceImpl implements ItemService {
             case NO -> sortOption =  Sort.unsorted();
             case ALPHA -> sortOption = Sort.by("title");
             case PRICE -> sortOption = Sort.by("price");
+            default -> throw new RuntimeException("Invalid sort option");
+        }
+        return sortOption;
+    }
+
+    private static String getSortOptionStr(SortOption sort) {
+        String sortOption;
+        switch (sort) {
+            case NO -> sortOption =  "";
+            case ALPHA -> sortOption = "title";
+            case PRICE -> sortOption = "price";
             default -> throw new RuntimeException("Invalid sort option");
         }
         return sortOption;

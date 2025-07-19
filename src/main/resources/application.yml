@@ -1,11 +1,11 @@
 spring:
   application:
     name: intershop
-  datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/intershopdb}
-    username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
-    driver-class-name: org.postgresql.Driver
+#  datasource:
+#    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/intershopdb}
+#    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+#    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+#    driver-class-name: org.postgresql.Driver
   docker:
     compose:
       enabled: false
@@ -16,7 +16,17 @@ spring:
     properties:
       hibernate:
         format_sql: false
-
+  r2dbc:
+    url: ${SPRING_DATASOURCE_URL:r2dbc:postgresql://localhost:5432/intershopdb}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+#    pool:
+#      enabled: true                               # Включение пула соединений
+#      initial-size: 10                            # Начальное количество соединений в пуле
+#      max-size: 50                                # Максимальное количество соединений
+#      max-idle-time: 30s                          # Время бездействия соединения перед закрытием
+#      max-life-time: 10m                          # Максимальное время жизни соединения
+#      validation-query: SELECT 1                  # SQL-запрос для проверки работоспособности соединения
 logging:
   level:
     org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG

@@ -1,10 +1,11 @@
 package ru.carbohz.intershop.service;
 
+import reactor.core.publisher.Mono;
 import ru.carbohz.intershop.dto.CartItemsDto;
 import ru.carbohz.intershop.model.Action;
 
 public interface CartService {
-    CartItemsDto getCartItems();
-    void changeItemsInCart(Long itemId, Action action);
-    Long createOrder();
+    Mono<CartItemsDto> getCartItems();
+    Mono<Void> changeItemsInCart(Long itemId, Action action);
+    Mono<Long> createOrder();
 }

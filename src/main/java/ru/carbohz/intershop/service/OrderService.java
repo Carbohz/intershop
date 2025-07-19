@@ -1,10 +1,12 @@
 package ru.carbohz.intershop.service;
 
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import ru.carbohz.intershop.dto.OrderDto;
 
 import java.util.List;
 
 public interface OrderService {
-    List<OrderDto> getOrders();
-    OrderDto getOrderById(long orderId);
+    Flux<OrderDto> getOrders();
+    Mono<OrderDto> getOrderById(long orderId);
 }

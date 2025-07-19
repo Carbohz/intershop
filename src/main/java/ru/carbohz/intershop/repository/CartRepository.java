@@ -1,26 +1,29 @@
 package ru.carbohz.intershop.repository;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.r2dbc.repository.Modifying;
+import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import reactor.core.publisher.Mono;
 import ru.carbohz.intershop.model.Cart;
-import ru.carbohz.intershop.model.Item;
 
-import java.util.Optional;
+public interface CartRepository extends ReactiveCrudRepository<Cart, Long> {
+    @Query("SELECT * FROM carts c LEFT JOIN items i ON i.id=c.item_id WHERE i.id = :itemId")
+    Mono<Cart> findByItem_Id(Long itemId);
 
-public interface CartRepository extends JpaRepository<Cart, Long> {
-    Optional<Cart> findByItem_Id(Long itemId);
-
-    void deleteByItem_Id(Long itemId);
-
-    @Modifying
-    @Query("UPDATE Cart c SET c.count = c.count + 1 WHERE c.item.id = :itemId")
-    void increaseCountForItem(@Param("itemId") Long itemId);
+    default Mono<Void> deleteByItem_Id(Long itemId) {
+        return findByItem_Id(itemId)
+                .flatMap(this::delete)  // Delete each item
+                .then();
+    }
 
     @Modifying
-    @Query("UPDATE Cart c SET c.count = c.count - 1 WHERE c.item.id = :itemId")
-    void decreaseCountForItem(@Param("itemId") Long itemId);
+//    @Query("UPDATE Cart c SET c.count = c.count + 1 WHERE c.item.id = :itemId")
+    @Query("UPDATE carts SET count = count + 1 WHERE item_id = :itemId")
+    Mono<Integer> increaseCountForItem(@Param("itemId") Long itemId);
 
-    Long item(Item item);
+    @Modifying
+//    @Query("UPDATE Cart c SET c.count = c.count - 1 WHERE c.item.id = :itemId")
+    @Query("UPDATE carts SET count = count - 1 WHERE item_id = :itemId")
+    Mono<Integer> decreaseCountForItem(@Param("itemId") Long itemId);
 }

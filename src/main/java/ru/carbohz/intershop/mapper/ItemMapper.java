@@ -2,6 +2,7 @@ package ru.carbohz.intershop.mapper;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 import ru.carbohz.intershop.dto.ItemDto;
 import ru.carbohz.intershop.model.Cart;
 import ru.carbohz.intershop.model.Item;
@@ -10,25 +11,24 @@ import ru.carbohz.intershop.model.Item;
 @RequiredArgsConstructor
 public class ItemMapper {
 
-    public ItemDto itemToItemDto(Item item, Cart cart) {
-        ItemDto itemDto = itemToItemDto(item);
-        itemDto.setCount(cart.getCount());
-        return itemDto;
+    public Mono<ItemDto> toItemDto(Item item, Long count) {
+        return Mono.fromCallable(() -> {
+            ItemDto itemDto = new ItemDto();
+            itemDto.setId(item.getId());
+            itemDto.setTitle(item.getTitle());
+            itemDto.setDescription(item.getDescription());
+            itemDto.setImgPath(item.getImagePath());
+            itemDto.setPrice(item.getPrice());
+            itemDto.setCount(count);
+            return itemDto;
+        });
     }
 
-    public ItemDto itemToItemDto(Item item) {
-        ItemDto itemDto = new ItemDto();
-
-        itemDto.setId(item.getId());
-        itemDto.setTitle(item.getTitle());
-        itemDto.setDescription(item.getDescription());
-        itemDto.setImgPath(item.getImagePath());
-        itemDto.setPrice(item.getPrice());
-
-        return itemDto;
+    public Mono<ItemDto> toItemDto(Item item) {
+        return toItemDto(item, 0L); // Default count
     }
 
-    public ItemDto cartToItemDto(Cart cart) {
-        return itemToItemDto(cart.getItem(), cart);
+    public Mono<ItemDto> toItemDto(Cart cart, Item item) {
+        return toItemDto(item, cart.getCount());
     }
 }

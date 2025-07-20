@@ -99,7 +99,7 @@ public class ItemServiceImpl implements ItemService {
                     long offset = pageRequest.getOffset();
 
                     Flux<Item> items = search.isBlank() ?
-                            itemRepository.findAll(pageSize, offset) :
+                            itemRepository.findAll(sortOptionStr, pageSize, offset) :
                             itemRepository.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
                                     search, sortOptionStr, pageSize, offset);
 

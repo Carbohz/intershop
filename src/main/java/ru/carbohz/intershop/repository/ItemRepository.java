@@ -14,8 +14,9 @@ public interface ItemRepository extends ReactiveCrudRepository<Item, Long> {
 //    Flux<Item> findByTitleContainingOrDescriptionContainingAllIgnoreCase(String title, String description, Pageable pageable);
 
     @Query("SELECT * FROM items " +
+           "ORDER BY :sort " +
            "LIMIT :limit OFFSET :offset")
-    Flux<Item> findAll(int limit, long offset);
+    Flux<Item> findAll(@Param("sort") String sort, @Param("limit") int limit, @Param("offset") long offset);
 
     @Query("SELECT * FROM items WHERE LOWER(title) LIKE LOWER(CONCAT('%', :search, '%')) " +
            "OR LOWER(description) LIKE LOWER(CONCAT('%', :search, '%')) " +

@@ -13,14 +13,17 @@ import ru.carbohz.intershop.model.Item;
 public interface ItemRepository extends ReactiveCrudRepository<Item, Long> {
 //    Flux<Item> findByTitleContainingOrDescriptionContainingAllIgnoreCase(String title, String description, Pageable pageable);
 
-    @Query("SELECT * FROM items " +
-           "ORDER BY :sort " +
-           "LIMIT :limit OFFSET :offset")
+    @Query("""
+        SELECT * FROM items
+        ORDER BY :sort DESC
+        OFFSET :offset
+        LIMIT :limit
+        """)
     Flux<Item> findAll(@Param("sort") String sort, @Param("limit") int limit, @Param("offset") long offset);
 
     @Query("SELECT * FROM items WHERE LOWER(title) LIKE LOWER(CONCAT('%', :search, '%')) " +
            "OR LOWER(description) LIKE LOWER(CONCAT('%', :search, '%')) " +
-           "ORDER BY :sort LIMIT :limit OFFSET :offset")
+           "ORDER BY :sort DESC LIMIT :limit OFFSET :offset")
     Flux<Item> findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
             @Param("search") String search,
             @Param("sort") String sort,

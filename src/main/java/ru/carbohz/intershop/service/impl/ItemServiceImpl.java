@@ -24,6 +24,7 @@ import ru.carbohz.intershop.service.ItemService;
 import ru.carbohz.intershop.service.PageableService;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -92,6 +93,7 @@ public class ItemServiceImpl implements ItemService {
         Sort sortOption = getSortOption(sort);
         String sortOptionStr = getSortOptionStr(sort);
         PageRequest pageRequest = PageRequest.of(pageNumber - 1, pageSize, sortOption);
+        Comparator<ItemDto> order = sort(sort);
 
         return (search.isBlank() ? itemRepository.count() :
                 itemRepository.countByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(search))
@@ -104,7 +106,7 @@ public class ItemServiceImpl implements ItemService {
                                     search, sortOptionStr, pageSize, offset);
 
                     return items.flatMap(this::toItemDto)
-                            .collectList()
+                            .collectSortedList(order)
                             .map(itemDtos -> {
                                 PageableItemsDto dto = new PageableItemsDto();
                                 dto.setItems(partitionRows(itemDtos, 5));
@@ -138,7 +140,7 @@ public class ItemServiceImpl implements ItemService {
     private static Sort getSortOption(SortOption sort) {
         Sort sortOption;
         switch (sort) {
-            case NO -> sortOption =  Sort.unsorted();
+            case NO -> sortOption = Sort.unsorted();
             case ALPHA -> sortOption = Sort.by("title");
             case PRICE -> sortOption = Sort.by("price");
             default -> throw new RuntimeException("Invalid sort option");
@@ -149,11 +151,26 @@ public class ItemServiceImpl implements ItemService {
     private static String getSortOptionStr(SortOption sort) {
         String sortOption;
         switch (sort) {
-            case NO -> sortOption =  "";
+            case NO -> sortOption = "";
             case ALPHA -> sortOption = "title";
             case PRICE -> sortOption = "price";
             default -> throw new RuntimeException("Invalid sort option");
         }
         return sortOption;
+    }
+
+    private static Comparator<ItemDto> sort(SortOption sortOption) {
+        switch (sortOption) {
+            case ALPHA -> {
+                return  Comparator.comparing(ItemDto::getTitle, String.CASE_INSENSITIVE_ORDER);
+            }
+            case PRICE -> {
+                return Comparator.comparingDouble(ItemDto::getPrice).reversed();
+            }
+            case NO -> {
+                return Comparator.comparingLong(ItemDto::getId);
+            }
+        }
+        throw new RuntimeException("Invalid sort option");
     }
 }

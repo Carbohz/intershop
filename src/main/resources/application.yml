@@ -20,6 +20,8 @@ spring:
     url: ${SPRING_DATASOURCE_URL:r2dbc:postgresql://localhost:5432/intershopdb}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+  thymeleaf:
+    encoding: UTF-8
 #    pool:
 #      enabled: true                               # Включение пула соединений
 #      initial-size: 10                            # Начальное количество соединений в пуле

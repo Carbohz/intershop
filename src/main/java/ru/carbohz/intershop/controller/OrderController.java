@@ -11,7 +11,7 @@ import reactor.core.publisher.Mono;
 import ru.carbohz.intershop.dto.OrderDto;
 import ru.carbohz.intershop.service.OrderService;
 
-import java.util.List;
+import java.util.Comparator;
 
 @Controller
 @RequestMapping("/orders")
@@ -29,8 +29,9 @@ public class OrderController {
 
     @GetMapping
     public Mono<String> getOrdersPage(Model model) {
+        Comparator<OrderDto> sort = Comparator.comparingLong(OrderDto::id);
         return orderService.getOrders()
-                .collectList()
+                .collectSortedList(sort)
                 .doOnNext(orders -> model.addAttribute("orders", orders))
                 .thenReturn("orders");
     }

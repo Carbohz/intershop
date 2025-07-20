@@ -90,20 +90,17 @@ public class ItemServiceImpl implements ItemService {
 //
 //        return pageableItemsDto;
 
-        Sort sortOption = getSortOption(sort);
-        String sortOptionStr = getSortOptionStr(sort);
-        PageRequest pageRequest = PageRequest.of(pageNumber - 1, pageSize, sortOption);
         Comparator<ItemDto> order = sort(sort);
 
         return (search.isBlank() ? itemRepository.count() :
                 itemRepository.countByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(search))
                 .flatMap(totalCount -> {
-                    long offset = pageRequest.getOffset();
+                    long offset = (long) pageNumber * pageSize;
 
                     Flux<Item> items = search.isBlank() ?
-                            itemRepository.findAll(sortOptionStr, pageSize, offset) :
+                            itemRepository.findAll(pageSize, offset) :
                             itemRepository.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(
-                                    search, sortOptionStr, pageSize, offset);
+                                    search, pageSize, offset);
 
                     return items.flatMap(this::toItemDto)
                             .collectSortedList(order)
@@ -135,28 +132,6 @@ public class ItemServiceImpl implements ItemService {
         return cartRepository.findByItem_Id(item.getId())
                 .flatMap(cart -> itemMapper.toItemDto(cart, item))
                 .switchIfEmpty(itemMapper.toItemDto(item));
-    }
-
-    private static Sort getSortOption(SortOption sort) {
-        Sort sortOption;
-        switch (sort) {
-            case NO -> sortOption = Sort.unsorted();
-            case ALPHA -> sortOption = Sort.by("title");
-            case PRICE -> sortOption = Sort.by("price");
-            default -> throw new RuntimeException("Invalid sort option");
-        }
-        return sortOption;
-    }
-
-    private static String getSortOptionStr(SortOption sort) {
-        String sortOption;
-        switch (sort) {
-            case NO -> sortOption = "";
-            case ALPHA -> sortOption = "title";
-            case PRICE -> sortOption = "price";
-            default -> throw new RuntimeException("Invalid sort option");
-        }
-        return sortOption;
     }
 
     private static Comparator<ItemDto> sort(SortOption sortOption) {

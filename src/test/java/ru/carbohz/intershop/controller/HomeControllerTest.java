@@ -16,6 +16,7 @@ public class HomeControllerTest {
         webTestClient.get().uri("/")
                 .exchange()
                 .expectStatus().is3xxRedirection()
-                .expectHeader().valueEquals("Location", "/main/items");
+                .expectHeader().valueEquals("Location", "/main/items")
+                .expectBody().isEmpty();
     }
 }

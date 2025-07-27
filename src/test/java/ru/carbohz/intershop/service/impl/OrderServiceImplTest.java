@@ -1,190 +1,187 @@
 package ru.carbohz.intershop.service.impl;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 import ru.carbohz.intershop.dto.ItemDto;
 import ru.carbohz.intershop.dto.OrderDto;
 import ru.carbohz.intershop.exception.OrderNotFoundException;
-import ru.carbohz.intershop.mapper.OrderItemMapper;
 import ru.carbohz.intershop.mapper.OrderMapper;
 import ru.carbohz.intershop.model.Order;
 import ru.carbohz.intershop.model.OrderItem;
+import ru.carbohz.intershop.repository.OrderItemRepository;
 import ru.carbohz.intershop.repository.OrderRepository;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
-@SpringJUnitConfig(classes = {
-        OrderServiceImpl.class,
-        OrderMapper.class,
-        OrderItemMapper.class
-})
+@ExtendWith(MockitoExtension.class)
 class OrderServiceImplTest {
-    @Autowired
-    OrderServiceImpl orderService;
 
-    @MockitoBean
-    OrderRepository orderRepository;
+    @Mock
+    private OrderRepository orderRepository;
+
+    @Mock
+    private OrderItemRepository orderItemRepository;
+
+    @Mock
+    private OrderMapper orderMapper;
+
+    @InjectMocks
+    private OrderServiceImpl orderService;
 
     @Test
     void getOrders() {
-        List<Order> orders = new ArrayList<>();
-        // create order 1
-        Order order1 = createOrder();
-
-        // create order 2
-        Order order2 = new Order();
-        order2.setId(2L);
-        order2.setTotalSum(837L);
-
-        List<OrderItem> orderItems2 = new ArrayList<>();
-
-        OrderItem orderItem3 = new OrderItem();
-        orderItem3.setId(3L);
-        orderItem3.setItemId(1440L);
-        orderItem3.setTitle("Item 3");
-        orderItem3.setDescription("Item 3 description");
-        orderItem3.setImagePath("Item 3 image path");
-        orderItem3.setPrice(837L);
-        orderItem3.setCount(1L);
-        orderItem3.setOrder(order2);
-
-        orderItems2.add(orderItem3);
-
-        order2.setOrderItems(orderItems2);
-
-        orders.add(order1);
-        orders.add(order2);
-
-        when(orderRepository.findAll()).thenReturn(orders);
-
-        List<OrderDto> orderDtos = orderService.getOrders();
-
-        assertThat(orderDtos.size()).isEqualTo(2);
-
-        OrderDto orderDto1 = orderDtos.get(0);
-        assertThat(orderDto1.id()).isEqualTo(1L);
-        assertThat(orderDto1.totalSum()).isEqualTo(100500L);
-
-        List<ItemDto> itemDtos1 = orderDto1.items();
-
-        ItemDto itemDto1 = itemDtos1.get(0);
-        assertThat(itemDto1.getId()).isEqualTo(10L);
-        assertThat(itemDto1.getTitle()).isEqualTo("Item 1");
-        assertThat(itemDto1.getDescription()).isEqualTo("Item 1 description");
-        assertThat(itemDto1.getImgPath()).isEqualTo("Item 1 image path");
-        assertThat(itemDto1.getCount()).isEqualTo(1L);
-        assertThat(itemDto1.getPrice()).isEqualTo(100000L);
-
-        ItemDto itemDto2 = itemDtos1.get(1);
-        assertThat(itemDto2.getId()).isEqualTo(14L);
-        assertThat(itemDto2.getTitle()).isEqualTo("Item 2");
-        assertThat(itemDto2.getDescription()).isEqualTo("Item 2 description");
-        assertThat(itemDto2.getImgPath()).isEqualTo("Item 2 image path");
-        assertThat(itemDto2.getCount()).isEqualTo(2L);
-        assertThat(itemDto2.getPrice()).isEqualTo(250L);
-
-        OrderDto orderDto2 = orderDtos.get(1);
-        assertThat(orderDto2.id()).isEqualTo(2L);
-        assertThat(orderDto2.totalSum()).isEqualTo(837L);
-
-        List<ItemDto> itemDtos2 = orderDto2.items();
-
-        ItemDto itemDto3 = itemDtos2.get(0);
-        assertThat(itemDto3.getId()).isEqualTo(1440L);
-        assertThat(itemDto3.getTitle()).isEqualTo("Item 3");
-        assertThat(itemDto3.getDescription()).isEqualTo("Item 3 description");
-        assertThat(itemDto3.getImgPath()).isEqualTo("Item 3 image path");
-        assertThat(itemDto3.getCount()).isEqualTo(1L);
-        assertThat(itemDto3.getPrice()).isEqualTo(837L);
-
-        verify(orderRepository, times(1)).findAll();
-        verifyNoMoreInteractions(orderRepository);
-    }
-
-    @Test
-    void getOrderById() {
-        Order order = createOrder();
-
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-
-        OrderDto orderDto1 = orderService.getOrderById(1L);
-
-        assertThat(orderDto1.id()).isEqualTo(1L);
-        assertThat(orderDto1.totalSum()).isEqualTo(100500L);
-
-        List<ItemDto> itemDtos1 = orderDto1.items();
-
-        ItemDto itemDto1 = itemDtos1.get(0);
-        assertThat(itemDto1.getId()).isEqualTo(10L);
-        assertThat(itemDto1.getTitle()).isEqualTo("Item 1");
-        assertThat(itemDto1.getDescription()).isEqualTo("Item 1 description");
-        assertThat(itemDto1.getImgPath()).isEqualTo("Item 1 image path");
-        assertThat(itemDto1.getCount()).isEqualTo(1L);
-        assertThat(itemDto1.getPrice()).isEqualTo(100000L);
-
-        ItemDto itemDto2 = itemDtos1.get(1);
-        assertThat(itemDto2.getId()).isEqualTo(14L);
-        assertThat(itemDto2.getTitle()).isEqualTo("Item 2");
-        assertThat(itemDto2.getDescription()).isEqualTo("Item 2 description");
-        assertThat(itemDto2.getImgPath()).isEqualTo("Item 2 image path");
-        assertThat(itemDto2.getCount()).isEqualTo(2L);
-        assertThat(itemDto2.getPrice()).isEqualTo(250L);
-
-        verify(orderRepository, times(1)).findById(1L);
-        verifyNoMoreInteractions(orderRepository);
-    }
-
-    @Test
-    void getOrderById_whenUserNotFound_throwsUserNotFoundException() {
-        when(orderRepository.findById(1L)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> orderService.getOrderById(1L))
-                .isInstanceOf(OrderNotFoundException.class)
-                .hasMessage("Order with id 1 not found");
-
-    }
-
-    private Order createOrder() {
-        // create order 1
+        // Create test orders (without items - they're in separate table)
         Order order1 = new Order();
         order1.setId(1L);
         order1.setTotalSum(100500L);
 
-        List<OrderItem> orderItems1 = new ArrayList<>();
+        Order order2 = new Order();
+        order2.setId(2L);
+        order2.setTotalSum(837L);
 
-        OrderItem orderItem1 = new OrderItem();
-        orderItem1.setId(1L);
-        orderItem1.setItemId(10L);
-        orderItem1.setTitle("Item 1");
-        orderItem1.setDescription("Item 1 description");
-        orderItem1.setImagePath("Item 1 image path");
-        orderItem1.setPrice(100000L);
-        orderItem1.setCount(1L);
-        orderItem1.setOrder(order1);
+        // Create test order items
+        OrderItem order1Item1 = createOrderItem(1L, 10L, "Item 1", 100000L, 1L, 1L);
+        OrderItem order1Item2 = createOrderItem(2L, 14L, "Item 2", 250L, 2L, 1L);
+        OrderItem order2Item1 = createOrderItem(3L, 1440L, "Item 3", 837L, 1L, 2L);
 
-        orderItems1.add(orderItem1);
+        // Mock repository responses
+        when(orderRepository.findAll()).thenReturn(Flux.just(order1, order2));
+        when(orderItemRepository.findByOrderId(1L)).thenReturn(Flux.just(order1Item1, order1Item2));
+        when(orderItemRepository.findByOrderId(2L)).thenReturn(Flux.just(order2Item1));
 
-        OrderItem orderItem2 = new OrderItem();
-        orderItem2.setId(2L);
-        orderItem2.setItemId(14L);
-        orderItem2.setTitle("Item 2");
-        orderItem2.setDescription("Item 2 description");
-        orderItem2.setImagePath("Item 2 image path");
-        orderItem2.setPrice(250L);
-        orderItem2.setCount(2L);
-        orderItem2.setOrder(order1);
+        // Create expected DTOs
+        OrderDto orderDto1 = createOrderDto(1L, 100500L,
+                List.of(
+                        createItemDto(10L, "Item 1", 100000L, 1L),
+                        createItemDto(14L, "Item 2", 250L, 2L)
+                )
+        );
 
-        orderItems1.add(orderItem2);
+        OrderDto orderDto2 = createOrderDto(2L, 837L,
+                List.of(
+                        createItemDto(1440L, "Item 3", 837L, 1L)
+                )
+        );
 
-        order1.setOrderItems(orderItems1);
+        // Mock mapper responses
+        when(orderMapper.toOrderDto(order1, List.of(order1Item1, order1Item2)))
+                .thenReturn(Mono.just(orderDto1));
+        when(orderMapper.toOrderDto(order2, List.of(order2Item1)))
+                .thenReturn(Mono.just(orderDto2));
 
-        return order1;
+        // Execute and verify
+        Flux<OrderDto> result = orderService.getOrders();
+
+        StepVerifier.create(result.collectList())
+                .assertNext(orderDtos -> {
+                    assertThat(orderDtos).hasSize(2);
+
+                    // Verify first order
+                    OrderDto dto1 = orderDtos.get(0);
+                    assertThat(dto1.id()).isEqualTo(1L);
+                    assertThat(dto1.totalSum()).isEqualTo(100500L);
+                    assertThat(dto1.items()).hasSize(2);
+
+                    // Verify second order
+                    OrderDto dto2 = orderDtos.get(1);
+                    assertThat(dto2.id()).isEqualTo(2L);
+                    assertThat(dto2.totalSum()).isEqualTo(837L);
+                    assertThat(dto2.items()).hasSize(1);
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void getOrderById() {
+        // Create test order
+        Order order = new Order();
+        order.setId(1L);
+        order.setTotalSum(100500L);
+
+        // Create test order items
+        OrderItem item1 = createOrderItem(1L, 10L, "Item 1", 100000L, 1L, 1L);
+        OrderItem item2 = createOrderItem(2L, 14L, "Item 2", 250L, 2L, 1L);
+
+        // Mock repository responses
+        when(orderRepository.findById(1L)).thenReturn(Mono.just(order));
+        when(orderItemRepository.findByOrderId(1L)).thenReturn(Flux.just(item1, item2));
+
+        // Create expected DTO
+        OrderDto expectedDto = createOrderDto(1L, 100500L,
+                List.of(
+                        createItemDto(10L, "Item 1", 100000L, 1L),
+                        createItemDto(14L, "Item 2", 250L, 2L)
+                )
+        );
+
+        // Mock mapper response
+        when(orderMapper.toOrderDto(order, List.of(item1, item2)))
+                .thenReturn(Mono.just(expectedDto));
+
+        // Execute and verify
+        Mono<OrderDto> result = orderService.getOrderById(1L);
+
+        StepVerifier.create(result)
+                .assertNext(dto -> {
+                    assertThat(dto.id()).isEqualTo(1L);
+                    assertThat(dto.totalSum()).isEqualTo(100500L);
+                    assertThat(dto.items()).hasSize(2);
+
+                    // Verify first item
+                    ItemDto itemDto1 = dto.items().get(0);
+                    assertThat(itemDto1.getId()).isEqualTo(10L);
+                    assertThat(itemDto1.getTitle()).isEqualTo("Item 1");
+                    assertThat(itemDto1.getPrice()).isEqualTo(100000L);
+                    assertThat(itemDto1.getCount()).isEqualTo(1L);
+
+                    // Verify second item
+                    ItemDto itemDto2 = dto.items().get(1);
+                    assertThat(itemDto2.getId()).isEqualTo(14L);
+                    assertThat(itemDto2.getTitle()).isEqualTo("Item 2");
+                    assertThat(itemDto2.getPrice()).isEqualTo(250L);
+                    assertThat(itemDto2.getCount()).isEqualTo(2L);
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void getOrderById_whenOrderNotFound_throwsOrderNotFoundException() {
+        when(orderRepository.findById(1L)).thenReturn(Mono.empty());
+
+        Mono<OrderDto> result = orderService.getOrderById(1L);
+
+        StepVerifier.create(result)
+                .expectErrorMatches(throwable ->
+                        throwable instanceof OrderNotFoundException &&
+                        throwable.getMessage().equals("Order with id 1 not found"))
+                .verify();
+    }
+
+    private OrderItem createOrderItem(Long id, Long itemId, String title, Long price, Long count, Long orderId) {
+        OrderItem item = new OrderItem();
+        item.setId(id);
+        item.setItemId(itemId);
+        item.setTitle(title);
+        item.setPrice(price);
+        item.setCount(count);
+        item.setOrderId(orderId);
+        return item;
+    }
+
+    private OrderDto createOrderDto(Long id, Long totalSum, List<ItemDto> items) {
+        return new OrderDto(id, items, totalSum);
+    }
+
+    private ItemDto createItemDto(Long id, String title, Long price, Long count) {
+        return new ItemDto(id, title, null, null, count, price);
     }
 }

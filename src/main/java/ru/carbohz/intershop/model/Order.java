@@ -3,12 +3,8 @@ package ru.carbohz.intershop.model;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Table(name = "orders")
 @Getter
@@ -19,8 +15,4 @@ public class Order {
 
     @Column
     private Long totalSum;
-
-    // TODO
-//    @Transient
-//    private List<OrderItem> orderItems = new ArrayList<>();
 }

@@ -18,12 +18,10 @@ public interface CartRepository extends ReactiveCrudRepository<Cart, Long> {
     }
 
     @Modifying
-//    @Query("UPDATE Cart c SET c.count = c.count + 1 WHERE c.item.id = :itemId")
     @Query("UPDATE carts SET count = count + 1 WHERE item_id = :itemId")
     Mono<Integer> increaseCountForItem(@Param("itemId") Long itemId);
 
     @Modifying
-//    @Query("UPDATE Cart c SET c.count = c.count - 1 WHERE c.item.id = :itemId")
     @Query("UPDATE carts SET count = count - 1 WHERE item_id = :itemId")
     Mono<Integer> decreaseCountForItem(@Param("itemId") Long itemId);
 }

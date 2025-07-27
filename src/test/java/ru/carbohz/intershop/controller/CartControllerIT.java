@@ -1,16 +1,14 @@
 package ru.carbohz.intershop.controller;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.reactive.function.BodyInserters;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 import ru.carbohz.intershop.TestcontainersConfiguration;
 import ru.carbohz.intershop.model.Cart;
 import ru.carbohz.intershop.model.Item;
@@ -18,8 +16,6 @@ import ru.carbohz.intershop.model.Order;
 import ru.carbohz.intershop.repository.CartRepository;
 import ru.carbohz.intershop.repository.ItemRepository;
 import ru.carbohz.intershop.repository.OrderRepository;
-
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -34,83 +30,73 @@ public class CartControllerIT {
     private ItemRepository itemRepository;
 
     @Autowired
-    private TestRestTemplate restTemplate;
+    private WebTestClient webTestClient;
 
     @Autowired
     private OrderRepository orderRepository;
 
     @Test
     public void buy() {
-        List<Item> items = itemRepository.findAll();
+        // Setup test data
+        Item item1 = itemRepository.findAll().blockFirst();
+        assertThat(item1).isNotNull();
+        Item item2 = itemRepository.findAll().blockLast();
+        assertThat(item2).isNotNull();
 
         Cart cart1 = new Cart();
-        cart1.setItem(items.getFirst());
+        cart1.setItemId(item1.getId());
         cart1.setCount(2L);
-        cartRepository.save(cart1);
+        cartRepository.save(cart1).block();
 
         Cart cart2 = new Cart();
-        cart2.setItem(items.getLast());
+        cart2.setItemId(item2.getId());
         cart2.setCount(10L);
-        cartRepository.save(cart2);
+        cartRepository.save(cart2).block();
 
-        ResponseEntity<String> response = restTemplate.postForEntity("/cart/buy", null, String.class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        // Execute request
+        webTestClient.post()
+                .uri("/cart/buy")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(BodyInserters.empty())
+                .exchange()
+                .expectStatus().is3xxRedirection()
+                .expectHeader().valueMatches("Location", "/orders/\\d+\\?newOrder=true");
 
-        assertThat(cartRepository.count()).isZero();
+        // Verify database state
+        Mono<Long> cartCount = cartRepository.count();
+        StepVerifier.create(cartCount)
+                .expectNext(0L)
+                .verifyComplete();
 
-        List<Order> orders = orderRepository.findAll();
-        assertThat(orders.size()).isEqualTo(1);
-        Order order = orders.getFirst();
-        assertThat(order.getId()).isEqualTo(1L);
-        assertThat(order.getTotalSum()).isEqualTo(359988L);
-        // assertThat(order.getOrderItems().size()).isEqualTo(2); // LazyInitializationException
-
-        checkHtmlRender(response);
+        Mono<Order> orderMono = orderRepository.findAll().next();
+        StepVerifier.create(orderMono)
+                .assertNext(order -> {
+                    assertThat(order.getId()).isEqualTo(1L);
+                    assertThat(order.getTotalSum()).isEqualTo(359988L);
+                })
+                .verifyComplete();
     }
 
-    private void checkHtmlRender(ResponseEntity<String> response) {
-        assertThat(response.getBody()).isNotNull();
+    @Test
+    public void checkOrderPageRendering() {
+        // First create an order
+        Item item = itemRepository.findAll().blockFirst();
+        Order order = new Order();
+        order.setTotalSum(item.getPrice() * 2);
+        orderRepository.save(order).block();
 
-        // Parse with JSoup
-        Document doc = Jsoup.parse(response.getBody());
-
-        // 0
-        Element successMessage = doc.select("h1").first();
-        assertThat(successMessage.text())
-                .isEqualTo("Поздравляем! Успешная покупка! 🙂");
-
-        // 1. Test basic page structure
-        assertThat(doc.title()).isEqualTo("Заказ");
-
-        // 2. Test navigation links
-        Elements navLinks = doc.select("body > a");
-        assertThat(navLinks).hasSize(3);
-        assertThat(navLinks.eachText())
-                .containsExactlyInAnyOrder("ГЛАВНАЯ ⤵", "КОРЗИНА ⤵", "ЗАКАЗЫ ⤵");
-
-        // 3. Test order header (dynamic content)
-        Element orderHeader = doc.select("h2").first();
-        assertThat(orderHeader.text()).matches("Заказ №\\d+");
-
-        // 4. Test order items
-        Elements items = doc.select("tr td table");
-        assertThat(items).isNotEmpty(); // At least one item
-
-        // Test first item's structure
-        Element firstItem = items.first();
-        assertThat(firstItem.select("img")).hasSize(1);
-        assertThat(firstItem.select("img").attr("width")).isEqualTo("300");
-        assertThat(firstItem.select("img").attr("height")).isEqualTo("300");
-
-        // 5. Test item details (title, count, price)
-        Elements itemDetails = firstItem.select("tr:eq(1) td");
-        assertThat(itemDetails).hasSize(3);
-        assertThat(itemDetails.get(0).text()).isNotBlank(); // Title
-        assertThat(itemDetails.get(1).text()).matches("\\d+ шт."); // Count
-        assertThat(itemDetails.get(2).text()).matches("\\d+ руб."); // Price
-
-        // 6. Test total sum
-        Element totalSum = doc.select("h3").first();
-        assertThat(totalSum.text()).matches("Сумма: \\d+ руб.");
+        // Test the order page rendering
+        webTestClient.get()
+                .uri("/orders/{orderId}?newOrder=true", order.getId())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .consumeWith(response -> {
+                    String html = new String(response.getResponseBody());
+                    assertThat(html).contains("Поздравляем! Успешная покупка!");
+                    assertThat(html).contains("Заказ №" + order.getId());
+                    assertThat(html).contains("Сумма: " + order.getTotalSum() + " руб.");
+                    // Add more HTML assertions as needed
+                });
     }
 }

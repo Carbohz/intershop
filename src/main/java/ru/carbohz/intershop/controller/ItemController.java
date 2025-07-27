@@ -75,10 +75,10 @@ public class ItemController {
             @RequestParam Action action) {
 
         return cartService.changeItemsInCart(id, action)
-                .thenReturn("redirect:/main/items?success=item_updated")
+                .thenReturn("redirect:/main/items")
                 .onErrorResume(e -> {
                     log.warn("Failed to update cart from main page: {}", e.getMessage());
-                    return Mono.just("redirect:/main/items?error=cart_update_failed");
+                    return Mono.just("redirect:/main/items");
                 });
     }
 
@@ -121,7 +121,7 @@ public class ItemController {
             Model model) {
 
         return cartService.changeItemsInCart(id, action)
-                .thenReturn("redirect:/items/" + id + "?success=item_updated")
+                .thenReturn("redirect:/items/" + id)
                 .onErrorResume(e -> {
                     log.warn("Failed to update cart from item page: {}", e.getMessage());
                     model.addAttribute("error", "Failed to update cart");

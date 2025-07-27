@@ -7,6 +7,5 @@ import ru.carbohz.intershop.model.SortOption;
 
 public interface ItemService {
     Mono<ItemDto> findItemById(Long id);
-
     Mono<PageableItemsDto> getPageableItems(String search, SortOption sort, int pageSize, int pageNumber);
 }

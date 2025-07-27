@@ -3,8 +3,6 @@ package ru.carbohz.intershop.service.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.reactive.TransactionalOperator;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.carbohz.intershop.dto.CartItemsDto;
 import ru.carbohz.intershop.mapper.CartMapper;
@@ -18,7 +16,6 @@ import ru.carbohz.intershop.service.CartService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 
 @Service
@@ -29,17 +26,10 @@ public class CartServiceImpl implements CartService {
     private final CartRepository cartRepository;
     private final CartMapper cartMapper;
     private final OrderItemRepository orderItemRepository;
-//    private final TransactionalOperator transactionalOperator;
 
     @Override
     @Transactional
     public Mono<CartItemsDto> getCartItems() {
-//        List<Cart> carts = cartRepository.findAll();
-//        if (carts.isEmpty()) {
-//            return new CartItemsDto(new ArrayList<>(), 0L, true);
-//        }
-//
-//        return cartMapper.toCartItemsDto(carts);
         return cartRepository.findAll()
                 .collectList()
                 .flatMap(carts -> {
@@ -62,40 +52,6 @@ public class CartServiceImpl implements CartService {
                 .collectMap(Item::getId, Function.identity());
     }
 
-//    @Override
-//    @Transactional
-//    public void changeItemsInCart(Long itemId, Action action) {
-//        switch (action) {
-//            case PLUS -> {
-//                Optional<Cart> maybeCart = cartRepository.findByItem_Id(itemId);
-//                if (maybeCart.isEmpty()) {
-//                    Cart cart = new Cart();
-//                    cart.setCount(1L);
-//                    itemRepository.findById(itemId).ifPresent(cart::setItem);
-//                    cartRepository.save(cart);
-//                    return;
-//                }
-//                cartRepository.increaseCountForItem(itemId);
-//            }
-//            case MINUS -> {
-//                Optional<Cart> maybeCart = cartRepository.findByItem_Id(itemId);
-//                if (maybeCart.isEmpty()) {
-//                    return;
-//                }
-//
-//                Cart cart = maybeCart.get();
-//                if (cart.getCount() == 1L) {
-//                    cartRepository.deleteByItem_Id(itemId);
-//                    return;
-//                }
-//
-//                cartRepository.decreaseCountForItem(itemId);
-//            }
-//            case DELETE -> cartRepository.deleteByItem_Id(itemId);
-//            default -> throw new IllegalStateException("Unexpected value: " + action);
-//        }
-//    }
-
     @Override
     @Transactional
     public Mono<Void> changeItemsInCart(Long itemId, Action action) {
@@ -104,14 +60,6 @@ public class CartServiceImpl implements CartService {
             case MINUS -> handleMinusAction(itemId);
             case DELETE -> handleDeleteAction(itemId);
         };
-
-//        return transactionalOperator.transactional(
-//                switch (action) {
-//                    case PLUS -> handlePlusAction(itemId);
-//                    case MINUS -> handleMinusAction(itemId);
-//                    case DELETE -> handleDeleteAction(itemId);
-//                }
-//        );
     }
 
     private Mono<Void> handlePlusAction(Long itemId) {
@@ -152,12 +100,6 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public Mono<Long> createOrder() {
-//        List<Cart> carts = cartRepository.findAll();
-//        Order order = cartMapper.toOrder(carts);
-//        Order savedOrder = orderRepository.save(order);
-//        cartRepository.deleteAll();
-//        return savedOrder.getId();
-
         return cartRepository.findAll()
                 .collectList()
                 .flatMap(carts -> {
@@ -179,6 +121,5 @@ public class CartServiceImpl implements CartService {
                                         });
                             });
                 });
-//                .as(transactionalOperator::transactional);
     }
 }

@@ -13,9 +13,6 @@ import ru.carbohz.intershop.repository.OrderItemRepository;
 import ru.carbohz.intershop.repository.OrderRepository;
 import ru.carbohz.intershop.service.OrderService;
 
-import java.util.List;
-import java.util.Optional;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -26,11 +23,6 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Flux<OrderDto> getOrders() {
-//        log.trace("returning orders");
-//        return orderRepository.findAll().stream()
-//                .map(orderMapper::toOrderDto)
-//                .toList();
-
         log.trace("Returning orders reactively");
         return orderRepository.findAll()
                 .flatMap(this::enrichOrderWithItems)
@@ -42,16 +34,6 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Mono<OrderDto> getOrderById(long orderId) {
-//        Optional<Order> maybeOrder = orderRepository.findById(orderId);
-//        if (maybeOrder.isEmpty()) {
-//            String message = "Order with id %d not found".formatted(orderId);
-//            log.error(message);
-//            throw new OrderNotFoundException(message);
-//        }
-//
-//        log.info("Found order with id {}", orderId);
-//        return orderMapper.toOrderDto(maybeOrder.get());
-
         log.trace("Fetching order by ID: {}", orderId);
         return orderRepository.findById(orderId)
                 .flatMap(this::enrichOrderWithItems)

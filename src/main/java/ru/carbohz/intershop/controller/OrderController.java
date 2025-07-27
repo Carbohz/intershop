@@ -20,13 +20,6 @@ public class OrderController {
 
     private final OrderService orderService;
 
-//    @GetMapping
-//    public String getOrdersPage(Model model) {
-//        List<OrderDto> orders = orderService.getOrders();
-//        model.addAttribute("orders", orders);
-//        return "orders";
-//    }
-
     @GetMapping
     public Mono<String> getOrdersPage(Model model) {
         Comparator<OrderDto> sort = Comparator.comparingLong(OrderDto::id);
@@ -35,17 +28,6 @@ public class OrderController {
                 .doOnNext(orders -> model.addAttribute("orders", orders))
                 .thenReturn("orders");
     }
-
-//
-//    @GetMapping("/{id}")
-//    public String getOrderPage(Model model,
-//                               @PathVariable("id") long orderId,
-//                               @RequestParam(defaultValue = "false") boolean newOrder) {
-//        OrderDto order = orderService.getOrderById(orderId);
-//        model.addAttribute("order", order);
-//        model.addAttribute("newOrder", newOrder);
-//        return "order";
-//    }
 
     @GetMapping("/{id}")
     public Mono<String> getOrderPage(Model model,

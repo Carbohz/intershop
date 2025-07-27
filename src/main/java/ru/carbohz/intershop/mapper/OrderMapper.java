@@ -2,7 +2,6 @@ package ru.carbohz.intershop.mapper;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.carbohz.intershop.dto.OrderDto;
 import ru.carbohz.intershop.model.Order;
@@ -25,19 +24,5 @@ public class OrderMapper {
             orderDto.setTotalSum(order.getTotalSum());
             return orderDto;
         });
-    }
-
-    // Reactive version for service use
-    public Mono<OrderDto> toOrderDto(Order order, Flux<OrderItem> orderItemsFlux) {
-        return orderItemsFlux
-                .map(orderItemMapper::toItemDto)
-                .collectList()
-                .map(items -> {
-                    OrderDto dto = new OrderDto();
-                    dto.setId(order.getId());
-                    dto.setItems(items);
-                    dto.setTotalSum(order.getTotalSum());
-                    return dto;
-                });
     }
 }

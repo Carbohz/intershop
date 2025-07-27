@@ -2,123 +2,117 @@ package ru.carbohz.intershop.service.impl;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 import ru.carbohz.intershop.dto.CartItemsDto;
 import ru.carbohz.intershop.dto.ItemDto;
 import ru.carbohz.intershop.mapper.CartMapper;
-import ru.carbohz.intershop.mapper.ItemMapper;
-import ru.carbohz.intershop.model.Action;
-import ru.carbohz.intershop.model.Cart;
-import ru.carbohz.intershop.model.Item;
-import ru.carbohz.intershop.model.Order;
+import ru.carbohz.intershop.model.*;
 import ru.carbohz.intershop.repository.CartRepository;
 import ru.carbohz.intershop.repository.ItemRepository;
+import ru.carbohz.intershop.repository.OrderItemRepository;
 import ru.carbohz.intershop.repository.OrderRepository;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
-@SpringJUnitConfig(classes = {
-        CartServiceImpl.class,
-        ItemMapper.class,
-        CartMapper.class,
-})
+@ExtendWith(MockitoExtension.class)
 class CartServiceImplTest {
 
-    @Autowired
-    CartServiceImpl cartService;
+    @Mock
+    private ItemRepository itemRepository;
 
-    @MockitoBean
-    ItemRepository itemRepository;
+    @Mock
+    private OrderRepository orderRepository;
 
-    @MockitoBean
-    OrderRepository orderRepository;
+    @Mock
+    private CartRepository cartRepository;
 
-    @MockitoBean
-    CartRepository cartRepository;
+    @Mock
+    private OrderItemRepository orderItemRepository;
+
+    @Mock
+    private CartMapper cartMapper;
+
+    @InjectMocks
+    private CartServiceImpl cartService;
 
     @Test
     void getCartItems_whenCartIsPresent() {
+        // Setup test data
         List<Cart> carts = createCarts();
+        Map<Long, Item> items = Map.of(
+                1L, createItem(1L, "Item 1", "Description 1", "ImagePath 1", 12345L),
+                2L, createItem(2L, "Item 2", "Description 2", "ImagePath 2", 10L)
+        );
+        CartItemsDto expectedDto = createCartItemsDto();
 
-        when(cartRepository.findAll()).thenReturn(carts);
+        // Mock repository responses
+        when(cartRepository.findAll()).thenReturn(Flux.fromIterable(carts));
+        when(itemRepository.findAllById(anyList())).thenReturn(Flux.fromIterable(items.values()));
+        when(cartMapper.toCartItemsDto(carts, items)).thenReturn(Mono.just(expectedDto));
 
-        CartItemsDto cartItemsDto = cartService.getCartItems();
-        assertThat(cartItemsDto.isEmpty()).isFalse();
-        assertThat(cartItemsDto.getTotal()).isEqualTo(123460L);
+        // Execute and verify
+        Mono<CartItemsDto> result = cartService.getCartItems();
 
-        List<ItemDto> itemDtos = cartItemsDto.getItems();
-        assertThat(itemDtos).hasSize(2);
+        StepVerifier.create(result)
+                .assertNext(cartItemsDto -> {
+                    assertThat(cartItemsDto.isEmpty()).isFalse();
+                    assertThat(cartItemsDto.getTotal()).isEqualTo(123460L);
 
-        ItemDto itemDto1 = itemDtos.get(0);
-        assertThat(itemDto1.getId()).isEqualTo(1L);
-        assertThat(itemDto1.getTitle()).isEqualTo("Item 1");
-        assertThat(itemDto1.getDescription()).isEqualTo("Description 1");
-        assertThat(itemDto1.getImgPath()).isEqualTo("ImagePath 1");
-        assertThat(itemDto1.getPrice()).isEqualTo(12345L);
+                    List<ItemDto> itemDtos = cartItemsDto.getItems();
+                    assertThat(itemDtos).hasSize(2);
 
-        ItemDto itemDto2 = itemDtos.get(1);
-        assertThat(itemDto2.getId()).isEqualTo(2L);
-        assertThat(itemDto2.getTitle()).isEqualTo("Item 2");
-        assertThat(itemDto2.getDescription()).isEqualTo("Description 2");
-        assertThat(itemDto2.getImgPath()).isEqualTo("ImagePath 2");
-        assertThat(itemDto2.getPrice()).isEqualTo(10L);
+                    ItemDto itemDto1 = itemDtos.get(0);
+                    assertThat(itemDto1.getId()).isEqualTo(1L);
+                    assertThat(itemDto1.getTitle()).isEqualTo("Item 1");
+                    assertThat(itemDto1.getDescription()).isEqualTo("Description 1");
+                    assertThat(itemDto1.getImgPath()).isEqualTo("ImagePath 1");
+                    assertThat(itemDto1.getPrice()).isEqualTo(12345L);
 
-        verify(cartRepository, times(1)).findAll();
-        verifyNoMoreInteractions(cartRepository);
+                    ItemDto itemDto2 = itemDtos.get(1);
+                    assertThat(itemDto2.getId()).isEqualTo(2L);
+                    assertThat(itemDto2.getTitle()).isEqualTo("Item 2");
+                    assertThat(itemDto2.getDescription()).isEqualTo("Description 2");
+                    assertThat(itemDto2.getImgPath()).isEqualTo("ImagePath 2");
+                    assertThat(itemDto2.getPrice()).isEqualTo(10L);
+                })
+                .verifyComplete();
 
-        verifyNoInteractions(itemRepository);
-        verifyNoInteractions(orderRepository);
-    }
-
-    private static List<Cart> createCarts() {
-        List<Cart> carts = new ArrayList<>();
-        Cart cart1 = new Cart();
-        cart1.setId(1L);
-        cart1.setCount(10L);
-        Item item = new Item();
-        item.setId(1L);
-        item.setTitle("Item 1");
-        item.setDescription("Description 1");
-        item.setImagePath("ImagePath 1");
-        item.setPrice(12345L);
-        cart1.setItem(item);
-        carts.add(cart1);
-
-        Cart cart2 = new Cart();
-        cart2.setId(2L);
-        cart2.setCount(1L);
-        Item item2 = new Item();
-        item2.setId(2L);
-        item2.setTitle("Item 2");
-        item2.setDescription("Description 2");
-        item2.setImagePath("ImagePath 2");
-        item2.setPrice(10L);
-        cart2.setItem(item2);
-        carts.add(cart2);
-        return carts;
+        verify(cartRepository).findAll();
+        verify(itemRepository).findAllById(List.of(1L, 2L));
+        verifyNoMoreInteractions(cartRepository, itemRepository, orderRepository);
     }
 
     @Test
     void getCartItems_whenCartIsEmpty() {
-        when(cartRepository.findAll()).thenReturn(new ArrayList<>());
+        // Mock repository responses
+        when(cartRepository.findAll()).thenReturn(Flux.empty());
 
-        CartItemsDto cartItemsDto = cartService.getCartItems();
-        assertThat(cartItemsDto.getItems()).isEmpty();
-        assertThat(cartItemsDto.getTotal()).isEqualTo(0L);
-        assertThat(cartItemsDto.isEmpty()).isTrue();
+        // Execute and verify
+        Mono<CartItemsDto> result = cartService.getCartItems();
 
-        verify(cartRepository, times(1)).findAll();
+        StepVerifier.create(result)
+                .assertNext(cartItemsDto -> {
+                    assertThat(cartItemsDto.getItems()).isEmpty();
+                    assertThat(cartItemsDto.getTotal()).isEqualTo(0L);
+                    assertThat(cartItemsDto.isEmpty()).isTrue();
+                })
+                .verifyComplete();
+
+        verify(cartRepository).findAll();
+        verifyNoInteractions(itemRepository, cartMapper);
         verifyNoMoreInteractions(cartRepository);
-
-        verifyNoInteractions(itemRepository);
-        verifyNoInteractions(orderRepository);
     }
 
     @Nested
@@ -126,122 +120,206 @@ class CartServiceImplTest {
         @Test
         void onActionPlus_whenCartIsEmpty() {
             Long itemId = 1L;
-            when(cartRepository.findByItem_Id(itemId)).thenReturn(Optional.empty());
-            when(itemRepository.findById(itemId)).thenReturn(Optional.empty());
-            when(cartRepository.save(any())).thenReturn(any());
+            Item item = createItem(itemId, "Test Item", "Desc", "img", 100L);
 
-            cartService.changeItemsInCart(itemId, Action.PLUS);
+            // Mock repository responses
+            when(cartRepository.findByItem_Id(itemId)).thenReturn(Mono.empty());
+            when(itemRepository.findById(itemId)).thenReturn(Mono.just(item));
+            when(cartRepository.save(any(Cart.class))).thenReturn(Mono.just(new Cart()));
 
-            verify(cartRepository, times(1)).findByItem_Id(itemId);
-            verify(cartRepository, times(1)).save(any());
-            verifyNoMoreInteractions(cartRepository);
+            // Execute and verify
+            Mono<Void> result = cartService.changeItemsInCart(itemId, Action.PLUS);
 
-            verify(itemRepository, times(1)).findById(itemId);
-            verifyNoMoreInteractions(itemRepository);
+            StepVerifier.create(result).verifyComplete();
 
-            verifyNoInteractions(orderRepository);
+            verify(cartRepository).findByItem_Id(itemId);
+            verify(itemRepository).findById(itemId);
+            verify(cartRepository).save(any(Cart.class));
+            verifyNoMoreInteractions(cartRepository, itemRepository);
         }
 
         @Test
         void onActionPlus_whenCartIsPresent() {
             Long itemId = 1L;
             Cart cart = new Cart();
-            when(cartRepository.findByItem_Id(itemId)).thenReturn(Optional.of(cart));
-            doNothing().when(cartRepository).increaseCountForItem(itemId);
+            cart.setId(1L);
+            cart.setItemId(itemId);
+            cart.setCount(5L);
 
-            cartService.changeItemsInCart(itemId, Action.PLUS);
+            // Mock repository responses
+            when(cartRepository.findByItem_Id(itemId)).thenReturn(Mono.just(cart));
+            when(cartRepository.save(cart)).thenReturn(Mono.just(cart));
+            when(itemRepository.findById(itemId)).thenReturn(Mono.just(createItem(itemId, "Test Item", "Desc", "img", 100L)));
 
-            verify(cartRepository, times(1)).findByItem_Id(itemId);
-            verify(cartRepository, times(1)).increaseCountForItem(itemId);
+            // Execute and verify
+            Mono<Void> result = cartService.changeItemsInCart(itemId, Action.PLUS);
+
+            StepVerifier.create(result).verifyComplete();
+
+            verify(cartRepository).findByItem_Id(itemId);
+            verify(cartRepository).save(cart);
+            assertThat(cart.getCount()).isEqualTo(6L);
+            verify(itemRepository, times(1)).findById(itemId);
+            verifyNoMoreInteractions(itemRepository);
             verifyNoMoreInteractions(cartRepository);
-
-            verifyNoInteractions(itemRepository);
-            verifyNoInteractions(orderRepository);
         }
 
         @Test
         void onActionMinus_whenCartIsEmpty() {
             Long itemId = 1L;
-            when(cartRepository.findByItem_Id(itemId)).thenReturn(Optional.empty());
 
-            cartService.changeItemsInCart(itemId, Action.MINUS);
+            // Mock repository responses
+            when(cartRepository.findByItem_Id(itemId)).thenReturn(Mono.empty());
 
-            verify(cartRepository, times(1)).findByItem_Id(itemId);
+            // Execute and verify
+            Mono<Void> result = cartService.changeItemsInCart(itemId, Action.MINUS);
+
+            StepVerifier.create(result).verifyComplete();
+
+            verify(cartRepository).findByItem_Id(itemId);
             verifyNoMoreInteractions(cartRepository);
-
             verifyNoInteractions(itemRepository);
-            verifyNoInteractions(orderRepository);
         }
 
         @Test
         void onActionMinus_whenCartIsPresent_andCountIsOne() {
             Long itemId = 1L;
             Cart cart = new Cart();
+            cart.setId(1L);
+            cart.setItemId(itemId);
             cart.setCount(1L);
-            when(cartRepository.findByItem_Id(itemId)).thenReturn(Optional.of(cart));
-            doNothing().when(cartRepository).deleteByItem_Id(itemId);
 
-            cartService.changeItemsInCart(itemId, Action.MINUS);
+            // Mock repository responses
+            when(cartRepository.findByItem_Id(itemId)).thenReturn(Mono.just(cart));
+            when(cartRepository.deleteById(cart.getId())).thenReturn(Mono.empty());
 
-            verify(cartRepository, times(1)).findByItem_Id(itemId);
-            verify(cartRepository, times(1)).deleteByItem_Id(itemId);
+            // Execute and verify
+            Mono<Void> result = cartService.changeItemsInCart(itemId, Action.MINUS);
+
+            StepVerifier.create(result).verifyComplete();
+
+            verify(cartRepository).findByItem_Id(itemId);
+            verify(cartRepository).deleteById(cart.getId());
             verifyNoMoreInteractions(cartRepository);
-
             verifyNoInteractions(itemRepository);
-            verifyNoInteractions(orderRepository);
         }
 
         @Test
         void onActionMinus_whenCartIsPresent_andCountIsMoreThanOne() {
             Long itemId = 1L;
             Cart cart = new Cart();
+            cart.setId(1L);
+            cart.setItemId(itemId);
             cart.setCount(10L);
-            when(cartRepository.findByItem_Id(itemId)).thenReturn(Optional.of(cart));
-            doNothing().when(cartRepository).decreaseCountForItem(itemId);
 
-            cartService.changeItemsInCart(itemId, Action.MINUS);
+            // Mock repository responses
+            when(cartRepository.findByItem_Id(itemId)).thenReturn(Mono.just(cart));
+            when(cartRepository.save(cart)).thenReturn(Mono.just(cart));
 
-            verify(cartRepository, times(1)).findByItem_Id(itemId);
-            verify(cartRepository, times(1)).decreaseCountForItem(itemId);
+            // Execute and verify
+            Mono<Void> result = cartService.changeItemsInCart(itemId, Action.MINUS);
+
+            StepVerifier.create(result).verifyComplete();
+
+            verify(cartRepository).findByItem_Id(itemId);
+            verify(cartRepository).save(cart);
+            assertThat(cart.getCount()).isEqualTo(9L);
             verifyNoMoreInteractions(cartRepository);
-
             verifyNoInteractions(itemRepository);
-            verifyNoInteractions(orderRepository);
         }
 
         @Test
         void onActionDelete() {
             Long itemId = 1L;
-            doNothing().when(cartRepository).deleteByItem_Id(itemId);
 
-            cartService.changeItemsInCart(itemId, Action.DELETE);
+            // Mock repository responses
+            when(cartRepository.deleteByItem_Id(itemId)).thenReturn(Mono.empty());
 
-            verify(cartRepository, times(1)).deleteByItem_Id(itemId);
+            // Execute and verify
+            Mono<Void> result = cartService.changeItemsInCart(itemId, Action.DELETE);
+
+            StepVerifier.create(result).verifyComplete();
+
+            verify(cartRepository).deleteByItem_Id(itemId);
             verifyNoMoreInteractions(cartRepository);
-
             verifyNoInteractions(itemRepository);
-            verifyNoInteractions(orderRepository);
         }
     }
 
     @Test
     void createOrder() {
+        // Setup test data
         List<Cart> carts = createCarts();
-        when(cartRepository.findAll()).thenReturn(carts);
+        Map<Long, Item> items = Map.of(
+                1L, createItem(1L, "Item 1", "Desc 1", "img1", 12345L),
+                2L, createItem(2L, "Item 2", "Desc 2", "img2", 10L)
+        );
+
         Order order = new Order();
         order.setId(1L);
-        when(orderRepository.save(any())).thenReturn(order);
+        order.setTotalSum(123460L);
 
-        Long createdId = cartService.createOrder();
-        assertThat(createdId).isEqualTo(1L);
+        List<OrderItem> orderItems = List.of(
+                new OrderItem(),
+                new OrderItem()
+        );
 
-        verify(cartRepository, times(1)).findAll();
-        verify(cartRepository, times(1)).deleteAll();
-        verifyNoMoreInteractions(cartRepository);
+        // Mock repository responses
+        when(cartRepository.findAll()).thenReturn(Flux.fromIterable(carts));
+        when(itemRepository.findAllById(anyList())).thenReturn(Flux.fromIterable(items.values()));
+        when(cartMapper.toOrder(carts, items)).thenReturn(order);
+        when(orderRepository.save(order)).thenReturn(Mono.just(order));
+        when(cartMapper.toOrderItems(carts, order.getId(), items)).thenReturn(orderItems);
+        when(orderItemRepository.saveAll(orderItems)).thenReturn(Flux.empty());
+        when(cartRepository.deleteAll()).thenReturn(Mono.empty());
 
-        verify(orderRepository, times(1)).save(any());
-        verifyNoMoreInteractions(orderRepository);
+        // Execute and verify
+        Mono<Long> result = cartService.createOrder();
 
-        verifyNoInteractions(itemRepository);
+        StepVerifier.create(result)
+                .assertNext(orderId -> assertThat(orderId).isEqualTo(1L))
+                .verifyComplete();
+
+        verify(cartRepository).findAll();
+        verify(itemRepository).findAllById(List.of(1L, 2L));
+        verify(orderRepository).save(order);
+        verify(orderItemRepository).saveAll(orderItems);
+        verify(cartRepository).deleteAll();
+        verifyNoMoreInteractions(cartRepository, itemRepository, orderRepository, orderItemRepository);
+    }
+
+    private List<Cart> createCarts() {
+        Cart cart1 = new Cart();
+        cart1.setId(1L);
+        cart1.setItemId(1L);
+        cart1.setCount(10L);
+
+        Cart cart2 = new Cart();
+        cart2.setId(2L);
+        cart2.setItemId(2L);
+        cart2.setCount(1L);
+
+        return List.of(cart1, cart2);
+    }
+
+    private Item createItem(Long id, String title, String description, String imagePath, Long price) {
+        Item item = new Item();
+        item.setId(id);
+        item.setTitle(title);
+        item.setDescription(description);
+        item.setImagePath(imagePath);
+        item.setPrice(price);
+        return item;
+    }
+
+    private CartItemsDto createCartItemsDto() {
+        return new CartItemsDto(
+                List.of(
+                        new ItemDto(1L, "Item 1", "Description 1", "ImagePath 1", 10L, 12345L),
+                        new ItemDto(2L, "Item 2", "Description 2", "ImagePath 2", 1L, 10L)
+                ),
+                123460L,
+                false
+        );
     }
 }

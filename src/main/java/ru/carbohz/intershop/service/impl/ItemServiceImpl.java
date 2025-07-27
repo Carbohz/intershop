@@ -21,7 +21,6 @@ import ru.carbohz.intershop.model.SortOption;
 import ru.carbohz.intershop.repository.CartRepository;
 import ru.carbohz.intershop.repository.ItemRepository;
 import ru.carbohz.intershop.service.ItemService;
-import ru.carbohz.intershop.service.PageableService;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -35,7 +34,6 @@ public class ItemServiceImpl implements ItemService {
 
     private final ItemRepository itemRepository;
     private final ItemMapper itemMapper;
-    private final PageableService pageableService;
     private final CartRepository cartRepository;
 
     @Override

@@ -29,7 +29,7 @@ public class CartServiceImpl implements CartService {
     private final CartRepository cartRepository;
     private final CartMapper cartMapper;
     private final OrderItemRepository orderItemRepository;
-    private final TransactionalOperator transactionalOperator;
+//    private final TransactionalOperator transactionalOperator;
 
     @Override
     @Transactional
@@ -97,15 +97,21 @@ public class CartServiceImpl implements CartService {
 //    }
 
     @Override
+    @Transactional
     public Mono<Void> changeItemsInCart(Long itemId, Action action) {
-        return transactionalOperator.transactional(
-                switch (action) {
-                    case PLUS -> handlePlusAction(itemId);
-                    case MINUS -> handleMinusAction(itemId);
-                    case DELETE -> handleDeleteAction(itemId);
-//                    default -> Mono.error(new IllegalStateException("Unexpected action: " + action));
-                }
-        );
+        return switch (action) {
+            case PLUS -> handlePlusAction(itemId);
+            case MINUS -> handleMinusAction(itemId);
+            case DELETE -> handleDeleteAction(itemId);
+        };
+
+//        return transactionalOperator.transactional(
+//                switch (action) {
+//                    case PLUS -> handlePlusAction(itemId);
+//                    case MINUS -> handleMinusAction(itemId);
+//                    case DELETE -> handleDeleteAction(itemId);
+//                }
+//        );
     }
 
     private Mono<Void> handlePlusAction(Long itemId) {
@@ -172,7 +178,7 @@ public class CartServiceImpl implements CartService {
                                                     .thenReturn(savedOrder.getId());
                                         });
                             });
-                })
-                .as(transactionalOperator::transactional);
+                });
+//                .as(transactionalOperator::transactional);
     }
 }

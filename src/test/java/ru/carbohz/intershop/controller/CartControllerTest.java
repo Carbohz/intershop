@@ -1,75 +1,84 @@
 package ru.carbohz.intershop.controller;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.util.UriComponentsBuilder;
+import reactor.core.publisher.Mono;
 import ru.carbohz.intershop.dto.CartItemsDto;
 import ru.carbohz.intershop.model.Action;
 import ru.carbohz.intershop.service.CartService;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest({CartController.class})
+@WebFluxTest(CartController.class)
 public class CartControllerTest {
 
     @MockitoBean
     private CartService cartService;
 
     @Autowired
-    private MockMvc mockMvc;
+    private WebTestClient webTestClient;
 
     @Test
-    public void getCartItems() throws Exception {
+    public void getCartItems() {
         CartItemsDto cartItemsDto = new CartItemsDto();
 
-        when(cartService.getCartItems()).thenReturn(cartItemsDto);
+        when(cartService.getCartItems()).thenReturn(Mono.just(cartItemsDto));
 
-        mockMvc.perform(get("/cart/items"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("cart"))
-                .andExpect(model().attribute("items", cartItemsDto.getItems()))
-                .andExpect(model().attribute("total", cartItemsDto.getTotal()))
-                .andExpect(model().attribute("empty", cartItemsDto.isEmpty()))
-                .andDo(print());
+        webTestClient.get().uri("/cart/items")
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().contentType(MediaType.TEXT_HTML)
+                .expectBody(String.class)
+                .consumeWith(result -> {
+                    String html = result.getResponseBody();
+                    assertThat(html).isNotNull();
+                    Document doc = Jsoup.parse(html);
+                    assertThat(doc.title()).isEqualTo("Корзина товаров");
+                });
 
         verify(cartService, times(1)).getCartItems();
         verifyNoMoreInteractions(cartService);
     }
 
     @Test
-    public void changeItemsCount() throws Exception {
+    public void changeItemsCount() {
         Long itemId = 1L;
         Action action = Action.DELETE;
-        doNothing().when(cartService).changeItemsInCart(itemId, action);
+        when(cartService.changeItemsInCart(itemId, action)).thenReturn(Mono.empty());
 
-        mockMvc.perform(post("/cart/items/{itemId}", itemId)
-                        .param("action", action.name()))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(view().name("redirect:/cart/items"))
-                .andExpect(redirectedUrl("/cart/items"))
-                .andDo(print());
+        webTestClient.post()
+                .uri(UriComponentsBuilder.fromPath("/cart/items/{itemId}")
+                        .queryParam("action", action.name())
+                        .build(itemId))
+                .exchange()
+                .expectStatus().is3xxRedirection()
+                .expectHeader().valueEquals("Location", "/cart/items");
 
         verify(cartService, times(1)).changeItemsInCart(itemId, action);
         verifyNoMoreInteractions(cartService);
     }
 
     @Test
-    public void buy() throws Exception {
+    public void buy() {
         Long orderId = 1L;
 
-        when(cartService.createOrder()).thenReturn(orderId);
+        when(cartService.createOrder()).thenReturn(Mono.just(orderId));
 
-        mockMvc.perform(post("/cart/buy"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(view().name("redirect:/orders/%d?newOrder=true".formatted(orderId)))
-                .andExpect(redirectedUrl("/orders/%d?newOrder=true".formatted(orderId)))
-                .andDo(print());
+        String expectedUrl = "/orders/" + orderId + "?newOrder=true";
+
+        webTestClient.post()
+                .uri("/cart/buy")
+                .exchange()
+                .expectStatus().is3xxRedirection()
+                .expectHeader().valueEquals("Location", expectedUrl);
 
         verify(cartService, times(1)).createOrder();
         verifyNoMoreInteractions(cartService);

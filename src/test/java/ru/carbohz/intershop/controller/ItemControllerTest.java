@@ -2,9 +2,10 @@ package ru.carbohz.intershop.controller;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Mono;
 import ru.carbohz.intershop.dto.ItemDto;
 import ru.carbohz.intershop.dto.PageableDto;
 import ru.carbohz.intershop.dto.PageableItemsDto;
@@ -13,13 +14,10 @@ import ru.carbohz.intershop.model.SortOption;
 import ru.carbohz.intershop.service.CartService;
 import ru.carbohz.intershop.service.ItemService;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest({ItemController.class})
+@WebFluxTest(ItemController.class)
 public class ItemControllerTest {
 
     @MockitoBean
@@ -29,10 +27,10 @@ public class ItemControllerTest {
     private CartService cartService;
 
     @Autowired
-    private MockMvc mockMvc;
+    private WebTestClient webTestClient;
 
     @Test
-    public void showItems() throws Exception {
+    public void showItems() {
         String search = "random";
         SortOption sort = SortOption.PRICE;
         int pageSize = 5;
@@ -44,20 +42,26 @@ public class ItemControllerTest {
         pageableDto.setPageNumber(pageNumber);
         pageableItems.setPageable(pageableDto);
 
-        when(itemService.getPageableItems(search, sort, pageSize, pageNumber)).thenReturn(pageableItems);
+        when(itemService.getPageableItems(search, sort, pageSize, pageNumber))
+                .thenReturn(Mono.just(pageableItems));
 
-        mockMvc.perform(get("/main/items")
-                        .param("search", search)
-                        .param("sort", sort.toString())
-                        .param("pageSize", String.valueOf(pageSize))
-                        .param("pageNumber", String.valueOf(pageNumber)))
-                .andExpect(status().isOk())
-                .andExpect(view().name("main"))
-                .andExpect(model().attribute("items", pageableItems.getItems()))
-                .andExpect(model().attribute("sort", sort))
-                .andExpect(model().attribute("paging", pageableItems.getPageable()))
-                .andExpect(model().attribute("search", search))
-                .andDo(print());
+        webTestClient.get()
+                .uri(uriBuilder -> uriBuilder.path("/main/items")
+                        .queryParam("search", search)
+                        .queryParam("sort", sort)
+                        .queryParam("pageSize", pageSize)
+                        .queryParam("pageNumber", pageNumber)
+                        .build())
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class)
+                .consumeWith(result -> {
+                    String html = result.getResponseBody();
+                    assertThat(html).contains("<label for=\"search\">");
+                    assertThat(html).contains("<label for=\"sort\">");
+                    assertThat(html).contains("<label for=\"pageSize\">");
+                });
+
 
         verify(itemService).getPageableItems(search, sort, pageSize, pageNumber);
         verifyNoMoreInteractions(itemService);
@@ -65,17 +69,18 @@ public class ItemControllerTest {
     }
 
     @Test
-    public void addItemToCartFromMainPage() throws Exception {
+    public void addItemToCartFromMainPage() {
         Long itemId = 1L;
         Action action = Action.PLUS;
-        doNothing().when(cartService).changeItemsInCart(itemId, action);
+        when(cartService.changeItemsInCart(itemId, action)).thenReturn(Mono.empty());
 
-        mockMvc.perform(post("/main/items/{itemId}", itemId)
-                        .param("action", action.toString()))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(view().name("redirect:/main/items"))
-                .andExpect(redirectedUrl("/main/items"))
-                .andDo(print());
+        webTestClient.post()
+                .uri(uriBuilder -> uriBuilder.path("/main/items/{itemId}")
+                        .queryParam("action", action)
+                        .build(itemId))
+                .exchange()
+                .expectStatus().is3xxRedirection()
+                .expectHeader().valueEquals("Location", "/main/items");
 
         verify(cartService, times(1)).changeItemsInCart(itemId, action);
         verifyNoMoreInteractions(cartService);
@@ -83,16 +88,21 @@ public class ItemControllerTest {
     }
 
     @Test
-    public void getItemById() throws Exception {
+    public void getItemById() {
         Long itemId = 1L;
         ItemDto itemDto = new ItemDto();
-        when(itemService.findItemById(itemId)).thenReturn(itemDto);
+        itemDto.setTitle("Test item");
+        when(itemService.findItemById(itemId)).thenReturn(Mono.just(itemDto));
 
-        mockMvc.perform(get("/items/{itemId}", itemId))
-                .andExpect(status().isOk())
-                .andExpect(model().attribute("item", itemDto))
-                .andExpect(view().name("item"))
-                .andDo(print());
+        webTestClient.get()
+                .uri("/items/{itemId}", itemId)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class)
+                .consumeWith(result -> {
+                    String html = result.getResponseBody();
+                    assertThat(html).contains("<b>Test item</b>"); // Verify item is rendered
+                });
 
         verify(itemService, times(1)).findItemById(itemId);
         verifyNoMoreInteractions(itemService);
@@ -100,18 +110,20 @@ public class ItemControllerTest {
     }
 
     @Test
-    public void addItemToCartFromItemPage() throws Exception {
+    public void addItemToCartFromItemPage() {
         Long itemId = 1L;
         Action action = Action.MINUS;
 
-        doNothing().when(cartService).changeItemsInCart(itemId, action);
+        when(cartService.changeItemsInCart(itemId, action))
+                .thenReturn(Mono.empty());
 
-        mockMvc.perform(post("/items/{itemId}", itemId)
-                        .param("action", action.toString()))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(view().name("redirect:/items/" + itemId))
-                .andExpect(redirectedUrl("/items/" + itemId))
-                .andDo(print());
+        webTestClient.post()
+                .uri(uriBuilder -> uriBuilder.path("/items/{itemId}")
+                        .queryParam("action", action)
+                        .build(itemId))
+                .exchange()
+                .expectStatus().is3xxRedirection()
+                .expectHeader().valueEquals("Location", "/items/" + itemId);
 
         verify(cartService, times(1)).changeItemsInCart(itemId, action);
         verifyNoMoreInteractions(cartService);

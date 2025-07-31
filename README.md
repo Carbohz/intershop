@@ -9,9 +9,9 @@ git clone https://github.com/Carbohz/intershop.git
 ```shell
 cd intershop
 ```
-- переключится на тег v1.0
+- переключится на тег v2.0
 ```shell
-git checkout tags/v1.0
+git checkout tags/v2.0
 ```
 ### Запуск локально (Intellij Idea)
 - открыть проект в Intellij Idea

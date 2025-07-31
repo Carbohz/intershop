@@ -1,11 +1,6 @@
 spring:
   application:
     name: intershop
-#  datasource:
-#    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/intershopdb}
-#    username: ${SPRING_DATASOURCE_USERNAME:postgres}
-#    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
-#    driver-class-name: org.postgresql.Driver
   docker:
     compose:
       enabled: false
@@ -16,21 +11,22 @@ spring:
     properties:
       hibernate:
         format_sql: false
-  r2dbc:
-    url: ${SPRING_DATASOURCE_URL:r2dbc:postgresql://localhost:5432/intershopdb}
-    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/intershopdb}
+    user: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+  r2dbc:
+    url: ${SPRING_R2DBC_URL:r2dbc:postgresql://localhost:5432/intershopdb}
+    username: ${SPRING_R2DBC_USERNAME:postgres}
+    password: ${SPRING_R2DBC_PASSWORD:postgres}
   thymeleaf:
     encoding: UTF-8
-#    pool:
-#      enabled: true                               # Включение пула соединений
-#      initial-size: 10                            # Начальное количество соединений в пуле
-#      max-size: 50                                # Максимальное количество соединений
-#      max-idle-time: 30s                          # Время бездействия соединения перед закрытием
-#      max-life-time: 10m                          # Максимальное время жизни соединения
-#      validation-query: SELECT 1                  # SQL-запрос для проверки работоспособности соединения
 logging:
   level:
     org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG
     org.hibernate: INFO
+    liquibase: DEBUG
+    org.springframework.jdbc: DEBUG
   config: classpath:logback-spring.xml

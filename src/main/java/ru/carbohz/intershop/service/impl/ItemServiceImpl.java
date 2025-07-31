@@ -51,7 +51,7 @@ public class ItemServiceImpl implements ItemService {
         return (search.isBlank() ? itemRepository.count() :
                 itemRepository.countByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(search))
                 .flatMap(totalCount -> {
-                    long offset = (long) pageNumber * pageSize;
+                    long offset = (long) (pageNumber - 1) * pageSize;
 
                     Flux<Item> items = search.isBlank() ?
                             itemRepository.findAll(pageSize, offset) :

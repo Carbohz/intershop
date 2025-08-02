@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'ru.carbohz'
-version = 'v1.0'
+version = 'v2.0'
 
 java {
 	toolchain {
@@ -26,7 +26,6 @@ repositories {
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-//	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
@@ -34,8 +33,6 @@ dependencies {
 	implementation 'org.liquibase:liquibase-core'
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
-//	runtimeOnly 'io.r2dbc:r2dbc-postgresql'
-//	runtimeOnly 'org.postgresql:r2dbc-postgresql:1.0.7.RELEASE'
 	runtimeOnly 'org.postgresql:r2dbc-postgresql'
 	runtimeOnly 'org.postgresql:postgresql'
 	implementation 'com.google.guava:guava:33.4.8-jre'
@@ -65,8 +62,8 @@ jib {
 		image = 'eclipse-temurin:21-jre-jammy' // Base image (Java 21)
 	}
 	to {
-		image = 'carbohz-intershop-reactive' // Your image name
-		tags = ['v1.0'] // Optional tags
+		image = 'carbohz-intershop' // Your image name
+		tags = ['v2.0'] // Optional tags
 	}
 	container {
 		ports = ['8080'] // Expose port 8080 (Spring Boot default)

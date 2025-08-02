@@ -1,0 +1,45 @@
+openapi: 3.0.3
+info:
+  title: Rest API платежей
+  version: 1.0.0
+paths:
+  /balance:
+    get:
+      tags:
+        - Payment
+      summary: Получение баланса на счёте
+      responses:
+        '200':
+          description: Баланс на счёте
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  balance:
+                    type: number
+                    format: bigdecimal
+                required:
+                  - balance
+    post:
+      tags:
+        - Payment
+      summary: Осуществление платежа
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sum:
+                  type: number
+                  format: bigdecimal
+                  minimum: 0
+                  exclusiveMinimum: false
+              required:
+                - sum
+      responses:
+        '200':
+          description: Баланс успешно уменьшен
+        '409':
+          description: Недостаточно средств

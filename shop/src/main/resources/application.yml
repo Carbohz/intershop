@@ -30,3 +30,7 @@ logging:
     liquibase: DEBUG
     org.springframework.jdbc: DEBUG
   config: classpath:logback-spring.xml
+payment:
+  service:
+    host: ${PAYMENT_SERVICE_HOST:localhost}
+    port: ${PAYMENT_SERVICE_PORT:8081}

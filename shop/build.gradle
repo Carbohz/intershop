@@ -3,6 +3,7 @@ plugins {
     id 'org.springframework.boot' version '3.4.5'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'com.google.cloud.tools.jib' version '3.4.5'
+    id 'org.openapi.generator' version '7.12.0'
 }
 
 group = 'ru.carbohz.shop'
@@ -56,6 +57,24 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+openApiGenerate {
+    generatorName = "java"
+    inputSpec = "$rootDir/payment/src/main/resources/api-spec.yaml"
+    outputDir = "$buildDir/generated"
+    apiPackage = "ru.carbohz.shop.api"
+    modelPackage = "ru.carbohz.shop.api.model"
+    configOptions = [
+            library: "webclient",
+            useJakartaEe: "true",
+            openApiNullable: "false"
+    ]
+}
+
+// Add generated sources to compilation
+sourceSets.main.java.srcDirs += "$buildDir/generated/src/main/java"
+
+compileJava.dependsOn tasks.openApiGenerate
 
 jib {
     from {

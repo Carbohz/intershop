@@ -4,10 +4,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.carbohz.shop.api.PaymentApi;
 import ru.carbohz.shop.api.model.BalancePostRequest;
 import ru.carbohz.shop.dto.CartItemsDto;
+import ru.carbohz.shop.dto.ItemDto;
 import ru.carbohz.shop.mapper.CartMapper;
 import ru.carbohz.shop.model.*;
 import ru.carbohz.shop.repository.CartRepository;
@@ -15,12 +17,12 @@ import ru.carbohz.shop.repository.ItemRepository;
 import ru.carbohz.shop.repository.OrderItemRepository;
 import ru.carbohz.shop.repository.OrderRepository;
 import ru.carbohz.shop.service.CartService;
+import ru.carbohz.shop.service.ItemService;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +34,7 @@ public class CartServiceImpl implements CartService {
     private final CartMapper cartMapper;
     private final OrderItemRepository orderItemRepository;
     private final PaymentApi paymentApi;
+    private final ItemService itemService;
 
     @Override
     @Transactional
@@ -54,8 +57,20 @@ public class CartServiceImpl implements CartService {
                 .distinct()
                 .toList();
 
-        return itemRepository.findAllById(itemIds)
-                .collectMap(Item::getId, Function.identity());
+        Flux<ItemDto> items = Flux.fromIterable(itemIds)
+                .flatMap(itemService::findItemById);
+
+        return items.collectMap(ItemDto::getId, this::toItem);
+    }
+
+    private Item toItem(ItemDto dto) {
+        var item = new Item();
+        item.setId(dto.getId());
+        item.setTitle(dto.getTitle());
+        item.setDescription(dto.getDescription());
+        item.setImagePath(dto.getImgPath());
+        item.setPrice(dto.getPrice());
+        return item;
     }
 
     @Override

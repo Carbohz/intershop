@@ -8,7 +8,6 @@ import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import ru.carbohz.shop.dto.ItemDto;
 import ru.carbohz.shop.dto.PageableItemsDto;
-import ru.carbohz.shop.model.Order;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -35,16 +34,6 @@ public class RedisConfiguration {
                                 .serializeValuesWith(
                                         RedisSerializationContext.SerializationPair.fromSerializer(
                                                 new Jackson2JsonRedisSerializer<>(ItemDto.class)
-                                        )
-                                )
-                )
-                .withCacheConfiguration(
-                        "orders",
-                        RedisCacheConfiguration.defaultCacheConfig()
-                                .entryTtl(Duration.of(1, ChronoUnit.MINUTES))
-                                .serializeValuesWith(
-                                        RedisSerializationContext.SerializationPair.fromSerializer(
-                                                new Jackson2JsonRedisSerializer<>(Order.class)
                                         )
                                 )
                 );

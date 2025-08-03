@@ -31,6 +31,7 @@ public class ItemServiceImpl implements ItemService {
     private final CartRepository cartRepository;
 
     @Override
+    @Cacheable(value = "item", key = "#id")
     public Mono<ItemDto> findItemById(Long id) {
         return itemRepository.findById(id)
                 .flatMap(this::toItemDto)

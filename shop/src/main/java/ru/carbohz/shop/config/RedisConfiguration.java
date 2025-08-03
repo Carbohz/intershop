@@ -6,8 +6,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
+import ru.carbohz.shop.dto.ItemDto;
 import ru.carbohz.shop.dto.PageableItemsDto;
-import ru.carbohz.shop.model.Item;
 import ru.carbohz.shop.model.Order;
 
 import java.time.Duration;
@@ -28,16 +28,16 @@ public class RedisConfiguration {
                                         )
                                 )
                 )
-//                .withCacheConfiguration(
-//                        "items",
-//                        RedisCacheConfiguration.defaultCacheConfig()
-//                                .entryTtl(Duration.of(1, ChronoUnit.MINUTES))
-//                                .serializeValuesWith(
-//                                        RedisSerializationContext.SerializationPair.fromSerializer(
-//                                                new Jackson2JsonRedisSerializer<>(Item.class)
-//                                        )
-//                                )
-//                )
+                .withCacheConfiguration(
+                        "item",
+                        RedisCacheConfiguration.defaultCacheConfig()
+                                .entryTtl(Duration.of(10, ChronoUnit.MINUTES))
+                                .serializeValuesWith(
+                                        RedisSerializationContext.SerializationPair.fromSerializer(
+                                                new Jackson2JsonRedisSerializer<>(ItemDto.class)
+                                        )
+                                )
+                )
                 .withCacheConfiguration(
                         "orders",
                         RedisCacheConfiguration.defaultCacheConfig()

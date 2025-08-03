@@ -10,7 +10,6 @@ import ru.carbohz.shop.api.PaymentApi;
 @Configuration
 @Slf4j
 public class PaymentServiceConfig {
-
     @Value("${payment.service.host:localhost}")
     private String host;
 

@@ -1,6 +1,10 @@
 spring:
   application:
     name: intershop
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
   docker:
     compose:
       enabled: false
@@ -27,8 +31,8 @@ logging:
   level:
     org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG
     org.hibernate: INFO
-    liquibase: DEBUG
-    org.springframework.jdbc: DEBUG
+    liquibase: INFO
+    org.springframework.jdbc: INFO
   config: classpath:logback-spring.xml
 payment:
   service:

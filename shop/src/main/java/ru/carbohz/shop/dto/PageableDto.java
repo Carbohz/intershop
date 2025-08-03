@@ -1,13 +1,11 @@
 package ru.carbohz.shop.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Setter
+@Getter
 @ToString
 public class PageableDto {
     private long pageNumber;

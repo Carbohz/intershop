@@ -75,13 +75,13 @@ jib {
         image = 'eclipse-temurin:21-jre-jammy' // Base image (Java 21)
     }
     to {
-        image = 'carbohz-intershop' // Your image name
-        tags = ['v2.0'] // Optional tags
+        image = 'carbohz-payment' // Your image name
+        tags = ['v3.0'] // Optional tags
     }
     container {
-        ports = ['8080'] // Expose port 8080 (Spring Boot default)
+        ports = ['8081'] // Expose port 8080 (Spring Boot default)
         creationTime = 'USE_CURRENT_TIMESTAMP' // Optional
-        mainClass = 'ru.carbohz.intershop.IntershopApplication'
+        mainClass = 'ru.carbohz.payment.PaymentApplication'
     }
 }
 

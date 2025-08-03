@@ -5,11 +5,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import ru.carbohz.shop.TestcontainersConfiguration;
+import ru.carbohz.shop.api.PaymentApi;
+import ru.carbohz.shop.api.model.BalancePostRequest;
 import ru.carbohz.shop.model.Cart;
 import ru.carbohz.shop.model.Item;
 import ru.carbohz.shop.model.Order;
@@ -18,6 +22,8 @@ import ru.carbohz.shop.repository.ItemRepository;
 import ru.carbohz.shop.repository.OrderRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(TestcontainersConfiguration.class)
@@ -34,6 +40,9 @@ public class CartControllerIT {
 
     @Autowired
     private OrderRepository orderRepository;
+
+    @MockitoBean
+    private PaymentApi paymentApi;
 
     @Test
     public void buy() {
@@ -52,6 +61,10 @@ public class CartControllerIT {
         cart2.setItemId(item2.getId());
         cart2.setCount(10L);
         cartRepository.save(cart2).block();
+
+        ResponseEntity<Void> response = ResponseEntity.ok().build();
+        when(paymentApi.balancePostWithHttpInfo(any(BalancePostRequest.class)))
+                .thenReturn(Mono.just(response));
 
         // Execute request
         webTestClient.post()

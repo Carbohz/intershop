@@ -2,16 +2,11 @@ package ru.carbohz.shop.service.impl;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
-import org.springframework.web.client.HttpClientErrorException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -29,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
@@ -330,8 +324,7 @@ class CartServiceImplTest {
         when(cartMapper.toOrderItems(carts, order.getId(), items)).thenReturn(orderItems);
         when(orderItemRepository.saveAll(orderItems)).thenReturn(Flux.empty());
         when(cartRepository.deleteAll()).thenReturn(Mono.empty());
-        when(paymentApi.balancePostWithHttpInfo(any())).thenReturn(
-                Mono.just(new ResponseEntity<>(HttpStatus.BAD_REQUEST)));
+        when(paymentApi.balancePostWithHttpInfo(any())).thenReturn(Mono.error(new RuntimeException()));
 
         // Execute and verify
         Mono<Long> result = cartService.createOrder();

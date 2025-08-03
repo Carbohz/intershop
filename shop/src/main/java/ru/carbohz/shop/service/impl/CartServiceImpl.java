@@ -121,32 +121,21 @@ public class CartServiceImpl implements CartService {
                                 balanceRequest.setSum(BigDecimal.valueOf(order.getTotalSum()));
                                 return paymentApi.balancePostWithHttpInfo(balanceRequest)
                                         .flatMap(resp -> {
-                                            if (resp.getStatusCode().is2xxSuccessful()) {
-                                                log.info("enough balance, processing order");
-                                                return orderRepository.save(order)
-                                                        .flatMap(savedOrder -> {
-                                                            List<OrderItem> orderItems =
-                                                                    cartMapper.toOrderItems(carts, savedOrder.getId(), itemMap);
+                                            log.info("enough balance, processing order");
+                                            return orderRepository.save(order)
+                                                    .flatMap(savedOrder -> {
+                                                        List<OrderItem> orderItems =
+                                                                cartMapper.toOrderItems(carts, savedOrder.getId(), itemMap);
 
-                                                            return orderItemRepository.saveAll(orderItems)
-                                                                    .then(cartRepository.deleteAll())
-                                                                    .thenReturn(savedOrder.getId());
-                                                        });
-                                            } else {
-                                                log.info("failed to save order: not enough balance");
-                                                return Mono.error(new IllegalStateException("not enough balance"));
-                                            }
+                                                        return orderItemRepository.saveAll(orderItems)
+                                                                .then(cartRepository.deleteAll())
+                                                                .thenReturn(savedOrder.getId());
+                                                    });
+                                        })
+                                        .onErrorResume(throwable -> {
+                                            log.info("failed to save order: not enough balance");
+                                            return Mono.error(new IllegalStateException("not enough balance"));
                                         });
-//                                return orderRepository.save(order)
-//                                        .flatMap(savedOrder -> {
-//                                            List<OrderItem> orderItems =
-//                                                    cartMapper.toOrderItems(carts, savedOrder.getId(), itemMap);
-//
-//                                            return orderItemRepository.saveAll(orderItems)
-//                                                    .then(cartRepository.deleteAll())
-//                                                    .thenReturn(savedOrder.getId());
-//                                        });
-
                             });
                 });
     }

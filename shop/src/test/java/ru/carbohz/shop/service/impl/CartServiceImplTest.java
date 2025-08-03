@@ -6,9 +6,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.web.client.HttpClientErrorException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import ru.carbohz.shop.api.PaymentApi;
 import ru.carbohz.shop.dto.CartItemsDto;
 import ru.carbohz.shop.dto.ItemDto;
 import ru.carbohz.shop.mapper.CartMapper;
@@ -22,29 +29,35 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@SpringJUnitConfig(classes = {
+        CartServiceImpl.class,
+})
 class CartServiceImplTest {
 
-    @Mock
+    @MockitoBean
     private ItemRepository itemRepository;
 
-    @Mock
+    @MockitoBean
     private OrderRepository orderRepository;
 
-    @Mock
+    @MockitoBean
     private CartRepository cartRepository;
 
-    @Mock
+    @MockitoBean
     private OrderItemRepository orderItemRepository;
 
-    @Mock
+    @MockitoBean
     private CartMapper cartMapper;
 
-    @InjectMocks
+    @MockitoBean
+    private PaymentApi paymentApi;
+
+    @Autowired
     private CartServiceImpl cartService;
 
     @Test
@@ -272,6 +285,8 @@ class CartServiceImplTest {
         when(cartMapper.toOrderItems(carts, order.getId(), items)).thenReturn(orderItems);
         when(orderItemRepository.saveAll(orderItems)).thenReturn(Flux.empty());
         when(cartRepository.deleteAll()).thenReturn(Mono.empty());
+        when(paymentApi.balancePostWithHttpInfo(any())).thenReturn(
+                Mono.just(new ResponseEntity<>(HttpStatus.OK)));
 
         // Execute and verify
         Mono<Long> result = cartService.createOrder();
@@ -285,7 +300,50 @@ class CartServiceImplTest {
         verify(orderRepository).save(order);
         verify(orderItemRepository).saveAll(orderItems);
         verify(cartRepository).deleteAll();
-        verifyNoMoreInteractions(cartRepository, itemRepository, orderRepository, orderItemRepository);
+        verify(paymentApi, times(1)).balancePostWithHttpInfo(any());
+        verifyNoMoreInteractions(cartRepository, itemRepository, orderRepository, orderItemRepository, paymentApi);
+    }
+
+    @Test
+    void createOrder_whenNotEnoughBalance_shouldThrowException() {
+        // Setup test data
+        List<Cart> carts = createCarts();
+        Map<Long, Item> items = Map.of(
+                1L, createItem(1L, "Item 1", "Desc 1", "img1", 12345L),
+                2L, createItem(2L, "Item 2", "Desc 2", "img2", 10L)
+        );
+
+        Order order = new Order();
+        order.setId(1L);
+        order.setTotalSum(123460L);
+
+        List<OrderItem> orderItems = List.of(
+                new OrderItem(),
+                new OrderItem()
+        );
+
+        // Mock repository responses
+        when(cartRepository.findAll()).thenReturn(Flux.fromIterable(carts));
+        when(itemRepository.findAllById(anyList())).thenReturn(Flux.fromIterable(items.values()));
+        when(cartMapper.toOrder(carts, items)).thenReturn(order);
+        when(orderRepository.save(order)).thenReturn(Mono.just(order));
+        when(cartMapper.toOrderItems(carts, order.getId(), items)).thenReturn(orderItems);
+        when(orderItemRepository.saveAll(orderItems)).thenReturn(Flux.empty());
+        when(cartRepository.deleteAll()).thenReturn(Mono.empty());
+        when(paymentApi.balancePostWithHttpInfo(any())).thenReturn(
+                Mono.just(new ResponseEntity<>(HttpStatus.BAD_REQUEST)));
+
+        // Execute and verify
+        Mono<Long> result = cartService.createOrder();
+
+        StepVerifier.create(result)
+                .expectError(IllegalStateException.class)
+                .verify();
+
+        verify(cartRepository).findAll();
+        verify(itemRepository).findAllById(List.of(1L, 2L));
+        verify(paymentApi, times(1)).balancePostWithHttpInfo(any());
+        verifyNoMoreInteractions(cartRepository, itemRepository, paymentApi);
     }
 
     private List<Cart> createCarts() {

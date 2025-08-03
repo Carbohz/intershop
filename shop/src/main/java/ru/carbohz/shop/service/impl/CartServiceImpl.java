@@ -1,9 +1,12 @@
 package ru.carbohz.shop.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Mono;
+import ru.carbohz.shop.api.PaymentApi;
+import ru.carbohz.shop.api.model.BalancePostRequest;
 import ru.carbohz.shop.dto.CartItemsDto;
 import ru.carbohz.shop.mapper.CartMapper;
 import ru.carbohz.shop.model.*;
@@ -13,6 +16,7 @@ import ru.carbohz.shop.repository.OrderItemRepository;
 import ru.carbohz.shop.repository.OrderRepository;
 import ru.carbohz.shop.service.CartService;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -20,12 +24,14 @@ import java.util.function.Function;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CartServiceImpl implements CartService {
     private final ItemRepository itemRepository;
     private final OrderRepository orderRepository;
     private final CartRepository cartRepository;
     private final CartMapper cartMapper;
     private final OrderItemRepository orderItemRepository;
+    private final PaymentApi paymentApi;
 
     @Override
     @Transactional
@@ -110,15 +116,37 @@ public class CartServiceImpl implements CartService {
                     return fetchItemsForCarts(carts)
                             .flatMap(itemMap -> {
                                 Order order = cartMapper.toOrder(carts, itemMap);
-                                return orderRepository.save(order)
-                                        .flatMap(savedOrder -> {
-                                            List<OrderItem> orderItems =
-                                                    cartMapper.toOrderItems(carts, savedOrder.getId(), itemMap);
 
-                                            return orderItemRepository.saveAll(orderItems)
-                                                    .then(cartRepository.deleteAll())
-                                                    .thenReturn(savedOrder.getId());
+                                final var balanceRequest = new BalancePostRequest();
+                                balanceRequest.setSum(BigDecimal.valueOf(order.getTotalSum()));
+                                return paymentApi.balancePostWithHttpInfo(balanceRequest)
+                                        .flatMap(resp -> {
+                                            if (resp.getStatusCode().is2xxSuccessful()) {
+                                                log.info("enough balance, processing order");
+                                                return orderRepository.save(order)
+                                                        .flatMap(savedOrder -> {
+                                                            List<OrderItem> orderItems =
+                                                                    cartMapper.toOrderItems(carts, savedOrder.getId(), itemMap);
+
+                                                            return orderItemRepository.saveAll(orderItems)
+                                                                    .then(cartRepository.deleteAll())
+                                                                    .thenReturn(savedOrder.getId());
+                                                        });
+                                            } else {
+                                                log.info("failed to save order: not enough balance");
+                                                return Mono.error(new IllegalStateException("not enough balance"));
+                                            }
                                         });
+//                                return orderRepository.save(order)
+//                                        .flatMap(savedOrder -> {
+//                                            List<OrderItem> orderItems =
+//                                                    cartMapper.toOrderItems(carts, savedOrder.getId(), itemMap);
+//
+//                                            return orderItemRepository.saveAll(orderItems)
+//                                                    .then(cartRepository.deleteAll())
+//                                                    .thenReturn(savedOrder.getId());
+//                                        });
+
                             });
                 });
     }

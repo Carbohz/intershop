@@ -44,8 +44,8 @@ public class CartController {
                 .flatMap(orderId ->
                         Mono.just("redirect:/orders/" + orderId + "?newOrder=true"))
                 .onErrorResume(e -> {
-                    model.addAttribute("error", "Failed to create order");
-                    return Mono.just("cart");
+                    model.addAttribute("error", "Failed to create order: " + e.getMessage());
+                    return Mono.just("error");
                 });
     }
 }

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Error Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .error-message {
+            color: #d32f2f;
+            margin-bottom: 30px;
+        }
+
+        .home-button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .home-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Oops! Something went wrong.</h1>
+
+    <div class="error-message" th:if="${error}" th:text="${error}">
+        <!-- Default error message will be replaced by Thymeleaf -->
+        Default error message
+    </div>
+
+    <p>We're sorry for the inconvenience. Please try again later.</p>
+
+    <button class="home-button" onclick="window.location.href='/'">
+        Return to Home Page
+    </button>
+</div>
+</body>
+</html>

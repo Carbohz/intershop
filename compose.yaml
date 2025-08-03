@@ -3,7 +3,7 @@ services:
     image: 'carbohz-payment:v3.0'
     container_name: payment-service
     environment:
-      - 'SPRING'
+      - 'BALANCE_SUM=500000'
     ports:
       - '8081:8081'
     networks:

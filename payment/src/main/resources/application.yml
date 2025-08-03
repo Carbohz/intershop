@@ -9,3 +9,5 @@ springdoc:
   api-docs:
     enabled:
       true
+balance:
+  sum: ${BALANCE_SUM:500000}

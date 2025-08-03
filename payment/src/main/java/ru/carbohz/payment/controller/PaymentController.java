@@ -1,8 +1,8 @@
 package ru.carbohz.payment.controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
@@ -18,7 +18,12 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @RestController
 public class PaymentController implements PaymentApi {
-    private final AtomicReference<BigDecimal> balanceRef = new AtomicReference<>(new BigDecimal(1000));
+    private final AtomicReference<BigDecimal> balanceRef;
+
+    @Autowired
+    public PaymentController(BigDecimal balance) {
+        this.balanceRef = new AtomicReference<>(balance);
+    }
 
     @Override
     public Mono<ResponseEntity<BalanceGet200Response>> balanceGet(ServerWebExchange exchange) {

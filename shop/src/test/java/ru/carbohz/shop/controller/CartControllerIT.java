@@ -11,9 +11,10 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import ru.carbohz.shop.TestcontainersConfiguration;
 import ru.carbohz.shop.api.PaymentApi;
 import ru.carbohz.shop.api.model.BalancePostRequest;
+import ru.carbohz.shop.config.PostgresTestcontainersConfiguration;
+import ru.carbohz.shop.config.RedisTestcontainersConfiguration;
 import ru.carbohz.shop.model.Cart;
 import ru.carbohz.shop.model.Item;
 import ru.carbohz.shop.model.Order;
@@ -26,7 +27,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import(TestcontainersConfiguration.class)
+@Import({PostgresTestcontainersConfiguration.class, RedisTestcontainersConfiguration.class})
 public class CartControllerIT {
 
     @Autowired

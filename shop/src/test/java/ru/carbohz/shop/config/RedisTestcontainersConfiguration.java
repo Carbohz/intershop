@@ -13,8 +13,7 @@ import org.testcontainers.utility.DockerImageName;
 public class RedisTestcontainersConfiguration {
 
     @Container
-    private static final RedisContainer redisContainer = new RedisContainer(DockerImageName.parse("redis:8-alpine"));
-
+    private static final RedisContainer redisContainer = new RedisContainer(DockerImageName.parse("redis:7.4.2-bookworm"));
 
     @Bean
     @ServiceConnection

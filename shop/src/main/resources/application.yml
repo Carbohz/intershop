@@ -40,5 +40,5 @@ payment:
     port: ${PAYMENT_SERVICE_PORT:8081}
 caching:
   ttl:
-    items: ${CACHING_TTL_ITEMS:2}
-    item: ${CACHING_TTL_ITEM:2}
+    items: ${CACHING_TTL_ITEMS:120}
+    item: ${CACHING_TTL_ITEM:120}

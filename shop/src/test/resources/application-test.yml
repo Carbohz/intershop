@@ -1,0 +1,4 @@
+caching:
+  ttl:
+    items: ${CACHING_TTL_ITEMS:2}
+    item: ${CACHING_TTL_ITEM:2}

@@ -17,10 +17,10 @@ import java.time.temporal.ChronoUnit;
 @Configuration
 @Slf4j
 public class RedisConfiguration {
-    @Value("${caching.ttl.items:1}")
+    @Value("${caching.ttl.items:60}")
     private Long itemsTtl;
 
-    @Value("${caching.ttl.item:1}")
+    @Value("${caching.ttl.item:60}")
     private Long itemTtl;
 
     @Bean
@@ -30,7 +30,7 @@ public class RedisConfiguration {
                 .withCacheConfiguration(
                         "items",
                         RedisCacheConfiguration.defaultCacheConfig()
-                                .entryTtl(Duration.of(itemsTtl, ChronoUnit.MINUTES))
+                                .entryTtl(Duration.of(itemsTtl, ChronoUnit.SECONDS))
                                 .serializeValuesWith(
                                         RedisSerializationContext.SerializationPair.fromSerializer(
                                                 new Jackson2JsonRedisSerializer<>(PageableItemsDto.class)
@@ -40,7 +40,7 @@ public class RedisConfiguration {
                 .withCacheConfiguration(
                         "item",
                         RedisCacheConfiguration.defaultCacheConfig()
-                                .entryTtl(Duration.of(itemTtl, ChronoUnit.MINUTES))
+                                .entryTtl(Duration.of(itemTtl, ChronoUnit.SECONDS))
                                 .serializeValuesWith(
                                         RedisSerializationContext.SerializationPair.fromSerializer(
                                                 new Jackson2JsonRedisSerializer<>(ItemDto.class)

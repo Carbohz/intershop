@@ -1,5 +1,16 @@
 # Проект intershop
 
+## Используемый стек
+
+- Spring Boot
+- Spring WebFlux + Netty
+- Spring Data R2DBC
+- r2dbc-postgresql для PostgreSQL
+- Spring Boot Test, @DataR2dbcTest, @WebFluxTest и Testcontainers для тестов
+- gradle как система сборки
+- jib для сборки docker-образов и docker compose для развертывания приложения
+- spring-boot-docker-compose для локальной разработки
+
 ## Использование приложения
 - склонировать репозиторий
 ```shell
@@ -29,6 +40,14 @@ git checkout tags/v2.0
 docker-compose up -d 
 ```
 - перейти по ссылке http://localhost:8080/
+
+### Запуск тестов
+- запустить Docker Server
+- запустить тесты командой
+```shell
+./gradlew test
+```
+
 ## Основной функционал
 
 В приложении используются следующие эндпоинты/страницы приложения:

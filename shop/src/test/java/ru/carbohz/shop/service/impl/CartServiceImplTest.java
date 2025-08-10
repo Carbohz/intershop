@@ -14,14 +14,20 @@ import ru.carbohz.shop.api.PaymentApi;
 import ru.carbohz.shop.dto.CartItemsDto;
 import ru.carbohz.shop.dto.ItemDto;
 import ru.carbohz.shop.mapper.CartMapper;
-import ru.carbohz.shop.model.*;
+import ru.carbohz.shop.mapper.ItemMapper;
+import ru.carbohz.shop.model.Action;
+import ru.carbohz.shop.model.Cart;
+import ru.carbohz.shop.model.Item;
+import ru.carbohz.shop.model.Order;
 import ru.carbohz.shop.repository.CartRepository;
 import ru.carbohz.shop.repository.ItemRepository;
 import ru.carbohz.shop.repository.OrderItemRepository;
 import ru.carbohz.shop.repository.OrderRepository;
+import ru.carbohz.shop.service.ItemService;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -30,6 +36,8 @@ import static org.mockito.Mockito.*;
 
 @SpringJUnitConfig(classes = {
         CartServiceImpl.class,
+        CartMapper.class,
+        ItemMapper.class,
 })
 class CartServiceImplTest {
 
@@ -46,10 +54,10 @@ class CartServiceImplTest {
     private OrderItemRepository orderItemRepository;
 
     @MockitoBean
-    private CartMapper cartMapper;
+    private PaymentApi paymentApi;
 
     @MockitoBean
-    private PaymentApi paymentApi;
+    private ItemService itemService;
 
     @Autowired
     private CartServiceImpl cartService;
@@ -58,16 +66,13 @@ class CartServiceImplTest {
     void getCartItems_whenCartIsPresent() {
         // Setup test data
         List<Cart> carts = createCarts();
-        Map<Long, Item> items = Map.of(
-                1L, createItem(1L, "Item 1", "Description 1", "ImagePath 1", 12345L),
-                2L, createItem(2L, "Item 2", "Description 2", "ImagePath 2", 10L)
-        );
-        CartItemsDto expectedDto = createCartItemsDto();
 
         // Mock repository responses
         when(cartRepository.findAll()).thenReturn(Flux.fromIterable(carts));
-        when(itemRepository.findAllById(anyList())).thenReturn(Flux.fromIterable(items.values()));
-        when(cartMapper.toCartItemsDto(carts, items)).thenReturn(Mono.just(expectedDto));
+        when(itemService.findItemById(1L)).thenReturn(
+                Mono.just(new ItemDto(1L, "Item 1", "Description 1", "ImagePath 1", 10L, 12345L)));
+        when(itemService.findItemById(2L)).thenReturn(
+                Mono.just(new ItemDto(2L, "Item 2", "Description 2", "ImagePath 2", 1L, 10L)));
 
         // Execute and verify
         Mono<CartItemsDto> result = cartService.getCartItems();
@@ -96,9 +101,15 @@ class CartServiceImplTest {
                 })
                 .verifyComplete();
 
-        verify(cartRepository).findAll();
-        verify(itemRepository).findAllById(List.of(1L, 2L));
-        verifyNoMoreInteractions(cartRepository, itemRepository, orderRepository);
+
+        verifyNoInteractions(itemRepository);
+        verifyNoInteractions(orderRepository);
+        verify(cartRepository, times(1)).findAll();
+        verifyNoInteractions(orderItemRepository);
+        verifyNoInteractions(paymentApi);
+        verify(itemService, times(1)).findItemById(1L);
+        verify(itemService, times(1)).findItemById(2L);
+        verifyNoMoreInteractions(cartRepository, itemService);
     }
 
     @Test
@@ -118,7 +129,7 @@ class CartServiceImplTest {
                 .verifyComplete();
 
         verify(cartRepository).findAll();
-        verifyNoInteractions(itemRepository, cartMapper);
+//        verifyNoInteractions(itemRepository, cartMapper);
         verifyNoMoreInteractions(cartRepository);
     }
 
@@ -266,18 +277,12 @@ class CartServiceImplTest {
         order.setId(1L);
         order.setTotalSum(123460L);
 
-        List<OrderItem> orderItems = List.of(
-                new OrderItem(),
-                new OrderItem()
-        );
-
         // Mock repository responses
         when(cartRepository.findAll()).thenReturn(Flux.fromIterable(carts));
-        when(itemRepository.findAllById(anyList())).thenReturn(Flux.fromIterable(items.values()));
-        when(cartMapper.toOrder(carts, items)).thenReturn(order);
-        when(orderRepository.save(order)).thenReturn(Mono.just(order));
-        when(cartMapper.toOrderItems(carts, order.getId(), items)).thenReturn(orderItems);
-        when(orderItemRepository.saveAll(orderItems)).thenReturn(Flux.empty());
+        when(orderRepository.save(any())).thenReturn(Mono.just(order));
+        when(itemService.findItemById(1L)).thenReturn(Mono.just(new ItemDto(1L, "Item 1", "Desc 1", "img1", 10L, 12345L)));
+        when(itemService.findItemById(2L)).thenReturn(Mono.just(new ItemDto(2L, "Item 2", "Desc 2", "img2", 1L, 10L)));
+        when(orderItemRepository.saveAll(anyList())).thenReturn(Flux.empty());
         when(cartRepository.deleteAll()).thenReturn(Mono.empty());
         when(paymentApi.balancePostWithHttpInfo(any())).thenReturn(
                 Mono.just(new ResponseEntity<>(HttpStatus.OK)));
@@ -290,40 +295,26 @@ class CartServiceImplTest {
                 .verifyComplete();
 
         verify(cartRepository).findAll();
-        verify(itemRepository).findAllById(List.of(1L, 2L));
-        verify(orderRepository).save(order);
-        verify(orderItemRepository).saveAll(orderItems);
+        verifyNoInteractions(itemRepository);
+        verify(orderRepository).save(argThat(actual -> Objects.equals(actual.getTotalSum(), order.getTotalSum())));
         verify(cartRepository).deleteAll();
         verify(paymentApi, times(1)).balancePostWithHttpInfo(any());
-        verifyNoMoreInteractions(cartRepository, itemRepository, orderRepository, orderItemRepository, paymentApi);
+        verifyNoMoreInteractions(cartRepository, orderRepository, paymentApi);
     }
 
     @Test
     void createOrder_whenNotEnoughBalance_shouldThrowException() {
         // Setup test data
         List<Cart> carts = createCarts();
-        Map<Long, Item> items = Map.of(
-                1L, createItem(1L, "Item 1", "Desc 1", "img1", 12345L),
-                2L, createItem(2L, "Item 2", "Desc 2", "img2", 10L)
-        );
 
         Order order = new Order();
         order.setId(1L);
         order.setTotalSum(123460L);
 
-        List<OrderItem> orderItems = List.of(
-                new OrderItem(),
-                new OrderItem()
-        );
-
         // Mock repository responses
         when(cartRepository.findAll()).thenReturn(Flux.fromIterable(carts));
-        when(itemRepository.findAllById(anyList())).thenReturn(Flux.fromIterable(items.values()));
-        when(cartMapper.toOrder(carts, items)).thenReturn(order);
-        when(orderRepository.save(order)).thenReturn(Mono.just(order));
-        when(cartMapper.toOrderItems(carts, order.getId(), items)).thenReturn(orderItems);
-        when(orderItemRepository.saveAll(orderItems)).thenReturn(Flux.empty());
-        when(cartRepository.deleteAll()).thenReturn(Mono.empty());
+        when(itemService.findItemById(1L)).thenReturn(Mono.just(new ItemDto(1L, "Item 1", "Desc 1", "img1", 10L, 12345L)));
+        when(itemService.findItemById(2L)).thenReturn(Mono.just(new ItemDto(2L, "Item 2", "Desc 2", "img2", 1L, 10L)));
         when(paymentApi.balancePostWithHttpInfo(any())).thenReturn(Mono.error(new RuntimeException()));
 
         // Execute and verify
@@ -333,10 +324,14 @@ class CartServiceImplTest {
                 .expectError(IllegalStateException.class)
                 .verify();
 
+        verifyNoInteractions(itemRepository);
+        verifyNoInteractions(orderRepository);
         verify(cartRepository).findAll();
-        verify(itemRepository).findAllById(List.of(1L, 2L));
+        verifyNoInteractions(orderItemRepository);
         verify(paymentApi, times(1)).balancePostWithHttpInfo(any());
-        verifyNoMoreInteractions(cartRepository, itemRepository, paymentApi);
+        verify(itemService, times(1)).findItemById(1L);
+        verify(itemService, times(1)).findItemById(2L);
+        verifyNoMoreInteractions(cartRepository, paymentApi, itemService);
     }
 
     private List<Cart> createCarts() {

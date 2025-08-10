@@ -148,8 +148,8 @@ public class CartServiceImpl implements CartService {
                                                     });
                                         })
                                         .onErrorResume(throwable -> {
-                                            log.info("failed to save order: not enough balance");
-                                            return Mono.error(new IllegalStateException("not enough balance"));
+                                            log.info("failed to save order: ", throwable);
+                                            return Mono.error(new IllegalStateException("failed to save order: " + throwable.getMessage()));
                                         });
                             });
                 });

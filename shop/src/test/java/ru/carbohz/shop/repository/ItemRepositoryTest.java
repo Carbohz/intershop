@@ -7,6 +7,7 @@ import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
 import reactor.core.publisher.Mono;
+import ru.carbohz.shop.config.NoCacheTestConfiguration;
 import ru.carbohz.shop.config.PostgresTestcontainersConfiguration;
 import ru.carbohz.shop.model.Item;
 
@@ -14,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataR2dbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import(PostgresTestcontainersConfiguration.class)
+@Import({PostgresTestcontainersConfiguration.class, NoCacheTestConfiguration.class})
 class ItemRepositoryTest {
 
     @Autowired

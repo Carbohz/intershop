@@ -1,5 +1,18 @@
 # Проект intershop
 
+## Используемый стек
+
+- Spring Boot
+- Spring WebFlux + Netty
+- Spring Data R2DBC
+- r2dbc-postgresql для PostgreSQL
+- Spring Data Redis для кеширования товаров
+- OpenAPI дляразработки RESTful-сервиса платежей на реактивном стеке (клиент и сервер)
+- Spring Boot Test, @DataR2dbcTest, @WebFluxTest и Testcontainers для тестов
+- gradle как система сборки
+- jib для сборки docker-образов и docker compose для развертывания приложения
+- spring-boot-docker-compose для локальной разработки
+
 ## Использование приложения
 - склонировать репозиторий
 ```shell
@@ -9,14 +22,15 @@ git clone https://github.com/Carbohz/intershop.git
 ```shell
 cd intershop
 ```
-- переключится на тег v2.0
+- переключится на тег v3.0
 ```shell
-git checkout tags/v2.0
+git checkout tags/v3.0
 ```
 ### Запуск локально (Intellij Idea)
 - открыть проект в Intellij Idea
 - запустить Docker Server
-- запустить приложение через класс `IntershopApplication`, выбрав профиль local
+- запустить сервис платежей через класс `PaymentApplication`
+- запустить сервис "Витрина интернет-магазина" через класс `ShopApplication`, выбрав профиль local
 - перейти по ссылке http://localhost:8080/
 
 ### Запуск в Docker
@@ -29,7 +43,15 @@ git checkout tags/v2.0
 docker-compose up -d 
 ```
 - перейти по ссылке http://localhost:8080/
-## Основной функционал
+
+### Запуск тестов
+- запустить Docker Server
+- запустить тесты командой
+```shell
+./gradlew test
+```
+
+## Основной функционал (сервис "Витрина интернет-магазина")
 
 В приложении используются следующие эндпоинты/страницы приложения:
 

@@ -81,7 +81,6 @@ public class ItemServiceImplIT {
                         throw new RuntimeException(e);
                     }
 
-                    System.out.println(redisTemplate.keys("*"));
                     assertThat(redisTemplate.opsForValue().get("item::1"))
                             .isEqualTo(res);
 
@@ -141,7 +140,6 @@ public class ItemServiceImplIT {
                         throw new RuntimeException(e);
                     }
 
-                    System.out.println(redisTemplate.keys("*"));
                     String key = "items::,NO,20,1";
                     assertThat(redisTemplate.opsForValue().get(key))
                             .isEqualTo(res);

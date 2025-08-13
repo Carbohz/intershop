@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: payment
+server:
+  port: 8081
+springdoc:
+  swagger-ui:
+    enabled: true
+  api-docs:
+    enabled:
+      true
+balance:
+  sum: ${BALANCE_SUM:500000}

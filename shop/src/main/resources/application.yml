@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: intershop
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  docker:
+    compose:
+      enabled: false
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: false
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/intershopdb}
+    user: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+  r2dbc:
+    url: ${SPRING_R2DBC_URL:r2dbc:postgresql://localhost:5432/intershopdb}
+    username: ${SPRING_R2DBC_USERNAME:postgres}
+    password: ${SPRING_R2DBC_PASSWORD:postgres}
+  thymeleaf:
+    encoding: UTF-8
+logging:
+  level:
+    org.springframework.web.filter.CommonsRequestLoggingFilter: DEBUG
+    org.hibernate: INFO
+    liquibase: INFO
+    org.springframework.jdbc: INFO
+  config: classpath:logback-spring.xml
+payment:
+  service:
+    host: ${PAYMENT_SERVICE_HOST:localhost}
+    port: ${PAYMENT_SERVICE_PORT:8081}
+caching:
+  ttl:
+    items: ${CACHING_TTL_ITEMS:120}
+    item: ${CACHING_TTL_ITEM:120}

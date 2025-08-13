@@ -6,6 +6,8 @@
 - Spring WebFlux + Netty
 - Spring Data R2DBC
 - r2dbc-postgresql для PostgreSQL
+- Spring Data Redis для кеширования товаров
+- OpenAPI дляразработки RESTful-сервиса платежей на реактивном стеке (клиент и сервер)
 - Spring Boot Test, @DataR2dbcTest, @WebFluxTest и Testcontainers для тестов
 - gradle как система сборки
 - jib для сборки docker-образов и docker compose для развертывания приложения
@@ -20,14 +22,15 @@ git clone https://github.com/Carbohz/intershop.git
 ```shell
 cd intershop
 ```
-- переключится на тег v2.0
+- переключится на тег v3.0
 ```shell
-git checkout tags/v2.0
+git checkout tags/v3.0
 ```
 ### Запуск локально (Intellij Idea)
 - открыть проект в Intellij Idea
 - запустить Docker Server
-- запустить приложение через класс `IntershopApplication`, выбрав профиль local
+- запустить сервис платежей через класс `PaymentApplication`
+- запустить сервис "Витрина интернет-магазина" через класс `ShopApplication`, выбрав профиль local
 - перейти по ссылке http://localhost:8080/
 
 ### Запуск в Docker
@@ -48,7 +51,7 @@ docker-compose up -d
 ./gradlew test
 ```
 
-## Основной функционал
+## Основной функционал (сервис "Витрина интернет-магазина")
 
 В приложении используются следующие эндпоинты/страницы приложения:
 
@@ -116,3 +119,13 @@ docker-compose up -d
 
 Возвращает:
 - шаблон "order.html"
+
+## Сервис платежей
+
+В приложении используются следующие эндпоинты:
+
+а) GET "/balance" - получение баланса на счёте
+
+б) POST "/balance" - осуществление платежа
+- в теле запроса передается сумма для списания
+- возвращает 200 в случае успешного списания или 409 при недостаточном количестве средств

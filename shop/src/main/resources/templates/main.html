@@ -14,6 +14,15 @@
 <a href="/cart/items" style="float:right;">
     <b>КОРЗИНА &cudarrr;</b>
 </a>
+<a href="/logout" style="float:right;" sec:authorize="isAuthenticated()">
+    <b>Выйти &#10549;</b>
+</a>
+<a href="/login" style="float:right;" th:if="!${#authentication}">
+    <b>Войти &#10549;</b>
+</a>
+<a href="/register" style="float:right;" th:if="!${#authentication}">
+    <b>Зарегистрироваться &#10549;</b>
+</a>
 <table style="width:70%;margin-left:auto;margin-right:auto;">
     <tr>
         <td>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Выйти?</title>
+</head>
+<body>
+<a href="/items/add" style="float:right;" sec:authorize="isAuthenticated()">
+    <b>Добавить товар &#10549;</b>
+</a>
+<a href="/orders" style="float:right;" sec:authorize="isAuthenticated()">
+    <b>ЗАКАЗЫ &#10549;</b>
+</a>
+<a href="/cart/items" style="float:right;" sec:authorize="isAuthenticated()">
+    <b>КОРЗИНА &#10549;</b>
+</a>
+<a href="/main/items" style="float:right;">
+    <b>ГЛАВНАЯ &#10549;</b>
+</a>
+<h1>Выйти?</h1>
+<form action="/logout" method="post">
+    <input type="submit" value="Выйти" />
+</form>
+</body>
+</html>

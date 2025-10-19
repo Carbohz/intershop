@@ -25,6 +25,17 @@ spring:
     url: ${SPRING_R2DBC_URL:r2dbc:postgresql://localhost:5432/intershopdb}
     username: ${SPRING_R2DBC_USERNAME:postgres}
     password: ${SPRING_R2DBC_PASSWORD:postgres}
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak-rest-client: # Описание клиента OAuth2
+            provider: keycloak
+            authorizationGrantType: client_credentials
+            client-id: rest-client
+            client-secret: 8lHWta5ggYFsrJN5eUEKn3j8YmZqLbSl
+            scope: profile
+            clientAuthenticationMethod: client_secret_post # Способ передачи секрета
   thymeleaf:
     encoding: UTF-8
 logging:

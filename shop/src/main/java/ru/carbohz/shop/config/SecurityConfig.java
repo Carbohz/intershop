@@ -34,8 +34,8 @@ import java.util.List;
 public class SecurityConfig {
     @Bean
     public SecurityWebFilterChain securityFilterChain(ServerHttpSecurity http) {
-//        var logoutSuccessHandler = new RedirectServerLogoutSuccessHandler();
-//        logoutSuccessHandler.setLogoutSuccessUrl(URI.create("/"));
+        var logoutSuccessHandler = new RedirectServerLogoutSuccessHandler();
+        logoutSuccessHandler.setLogoutSuccessUrl(URI.create("/"));
 
         return http
                 .authorizeExchange(exchanges -> exchanges
@@ -51,7 +51,7 @@ public class SecurityConfig {
 //                .httpBasic(Customizer.withDefaults())
                 .logout(logout -> logout
                                 .logoutUrl("/logout")
-                                .logoutSuccessHandler(new HttpStatusReturningServerLogoutSuccessHandler())
+                                .logoutSuccessHandler(logoutSuccessHandler)
                 )
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .build();

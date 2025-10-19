@@ -84,9 +84,15 @@ public class RegisterController {
 
     @PostMapping
     public Mono<String> register(Model model, RegisterUserForm form, ServerWebExchange exchange) {
-        return ReactiveSecurityContextHolder.getContext()
-                .map(SecurityContext::getAuthentication)
-                .flatMap(authentication -> userService.register(form))
-                .flatMap(user -> Mono.just("main"));
+//        return ReactiveSecurityContextHolder.getContext()
+//                .map(SecurityContext::getAuthentication)
+//                .map(a -> {
+//                    var p = a.getPrincipal();
+//                    return Mono.just(p);
+//                })
+//                .flatMap(authentication -> userService.register(form))
+//                .flatMap(user -> Mono.just("main"));
+        return userService.register(form)
+                .thenReturn("redirect:/main/items");
     }
 }

@@ -48,11 +48,11 @@ public class SecurityConfig {
                 .formLogin(form -> form
                         .loginPage("/login")
                 )
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessHandler(new HttpStatusReturningServerLogoutSuccessHandler())
-                )
 //                .httpBasic(Customizer.withDefaults())
+                .logout(logout -> logout
+                                .logoutUrl("/logout")
+                                .logoutSuccessHandler(new HttpStatusReturningServerLogoutSuccessHandler())
+                )
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .build();
     }

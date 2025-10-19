@@ -21,12 +21,12 @@ public class UserService {
 
     public Mono<User> register(RegisterUserForm form) {
         return validateUserDoesNotExist(form)
-                .flatMap(user -> {
+                .then(Mono.defer(() -> {
                     final String username = form.getUsername();
                     final String password = passwordEncoder.encode(form.getPassword());
                     final BigDecimal amount = BigDecimal.valueOf(100500); // FIXME
                     return insert(new User(username, password, amount));
-                })
+                }))
                 .doOnSuccess(user -> {
                     log.info("User {} registered successfully", user.getName());
                 })
@@ -52,7 +52,7 @@ public class UserService {
                 .flatMap(u -> userRepository.deleteById(id).thenReturn(u));
     }
 
-    private Mono<User> validateUserDoesNotExist(RegisterUserForm form) {
+    private Mono<Void> validateUserDoesNotExist(RegisterUserForm form) {
         final String username = form.getUsername();
         return userRepository.existsByName(username)
                 .flatMap(usernameExists -> {

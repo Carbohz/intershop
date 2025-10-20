@@ -22,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.logout.HttpStatusReturningServerLogoutSuccessHandler;
 import org.springframework.security.web.server.authentication.logout.RedirectServerLogoutSuccessHandler;
+import org.springframework.security.web.server.context.WebSessionServerSecurityContextRepository;
 import org.springframework.web.server.WebSession;
 import reactor.core.publisher.Mono;
 import ru.carbohz.shop.service.UserService;
@@ -38,6 +39,7 @@ public class SecurityConfig {
         logoutSuccessHandler.setLogoutSuccessUrl(URI.create("/"));
 
         return http
+                .securityContextRepository(new WebSessionServerSecurityContextRepository())
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(HttpMethod.GET, "/", "/main/items", "/items/*", "/images/*").permitAll()
                         .pathMatchers("/register").permitAll()
@@ -62,27 +64,10 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    @Bean
-    public ReactiveUserDetailsService userDetailsService(UserService userService) {
-        return username -> userService.findByName(username)
-                .map(u -> (UserDetails) new User(u.getName(), u.getPassword(), List.of(new SimpleGrantedAuthority("ROLE_USER"))))
-                .switchIfEmpty(Mono.error(new UsernameNotFoundException(username)));
-    }
-
 //    @Bean
-//    public ReactiveOAuth2AuthorizedClientManager auth2AuthorizedClientManager(
-//            ReactiveClientRegistrationRepository clientRegistrationRepository,
-//            ReactiveOAuth2AuthorizedClientService authorizedClientService
-//    ) {
-//        AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager manager =
-//                new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(clientRegistrationRepository, authorizedClientService);
-//
-//        manager.setAuthorizedClientProvider(ReactiveOAuth2AuthorizedClientProviderBuilder.builder()
-//                .clientCredentials()
-//                .refreshToken()
-//                .build()
-//        );
-//
-//        return manager;
+//    public ReactiveUserDetailsService userDetailsService(UserService userService) {
+//        return username -> userService.findByName(username)
+//                .map(u -> (UserDetails) new User(u.getName(), u.getPassword(), List.of(new SimpleGrantedAuthority("ROLE_USER"))))
+//                .switchIfEmpty(Mono.error(new UsernameNotFoundException(username)));
 //    }
 }

@@ -3,42 +3,39 @@ package ru.carbohz.shop.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.ReactiveAuthenticationManager;
+import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
+import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-//import org.springframework.security.oauth2.client.AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager;
-//import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientManager;
-//import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientProviderBuilder;
-//import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientService;
-//import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository;
 import org.springframework.security.web.server.SecurityWebFilterChain;
-import org.springframework.security.web.server.authentication.logout.HttpStatusReturningServerLogoutSuccessHandler;
+import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
+import org.springframework.security.web.server.authentication.ServerHttpBasicAuthenticationConverter;
 import org.springframework.security.web.server.authentication.logout.RedirectServerLogoutSuccessHandler;
 import org.springframework.security.web.server.context.WebSessionServerSecurityContextRepository;
-import org.springframework.web.server.WebSession;
-import reactor.core.publisher.Mono;
-import ru.carbohz.shop.service.UserService;
 
 import java.net.URI;
-import java.util.List;
 
 @Configuration
 @EnableWebFluxSecurity
+@EnableReactiveMethodSecurity
 public class SecurityConfig {
     @Bean
-    public SecurityWebFilterChain securityFilterChain(ServerHttpSecurity http) {
+    public SecurityWebFilterChain securityFilterChain(ServerHttpSecurity http,
+                                                      ReactiveAuthenticationManager authenticationManager) {
         var logoutSuccessHandler = new RedirectServerLogoutSuccessHandler();
         logoutSuccessHandler.setLogoutSuccessUrl(URI.create("/"));
 
+        AuthenticationWebFilter authFilter = new AuthenticationWebFilter(authenticationManager);
+        authFilter.setServerAuthenticationConverter(new ServerHttpBasicAuthenticationConverter());
+
         return http
+                .addFilterAt(authFilter, SecurityWebFiltersOrder.AUTHENTICATION)
                 .securityContextRepository(new WebSessionServerSecurityContextRepository())
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(HttpMethod.GET, "/", "/main/items", "/items/*", "/images/*").permitAll()
@@ -47,27 +44,34 @@ public class SecurityConfig {
                         .anyExchange().authenticated()
                 )
 //                .oauth2Client(Customizer.withDefaults())
-                .formLogin(form -> form
-                        .loginPage("/login")
-                )
+//                .formLogin(form -> form
+//                        .loginPage("/login")
+//                )
+                .formLogin(Customizer.withDefaults())
 //                .httpBasic(Customizer.withDefaults())
-                .logout(logout -> logout
-                                .logoutUrl("/logout")
-                                .logoutSuccessHandler(logoutSuccessHandler)
-                )
+//                .logout(logout -> logout
+//                                .logoutUrl("/logout")
+//                                .logoutSuccessHandler(logoutSuccessHandler)
+//                )
+                .logout(Customizer.withDefaults())
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .build();
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+//        return new BCryptPasswordEncoder();
+        return NoOpPasswordEncoder.getInstance(); // TODO BCrypt
     }
 
-//    @Bean
-//    public ReactiveUserDetailsService userDetailsService(UserService userService) {
-//        return username -> userService.findByName(username)
-//                .map(u -> (UserDetails) new User(u.getName(), u.getPassword(), List.of(new SimpleGrantedAuthority("ROLE_USER"))))
-//                .switchIfEmpty(Mono.error(new UsernameNotFoundException(username)));
-//    }
+    @Bean
+    public ReactiveAuthenticationManager authenticationManager(
+            ReactiveUserDetailsService userDetailsService,
+            PasswordEncoder passwordEncoder) {
+
+        UserDetailsRepositoryReactiveAuthenticationManager authManager =
+                new UserDetailsRepositoryReactiveAuthenticationManager(userDetailsService);
+        authManager.setPasswordEncoder(passwordEncoder);
+        return authManager;
+    }
 }

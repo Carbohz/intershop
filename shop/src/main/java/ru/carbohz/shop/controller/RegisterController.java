@@ -35,7 +35,8 @@ public class RegisterController {
 //                })
 //                .flatMap(authentication -> userService.register(form))
 //                .flatMap(user -> Mono.just("main"));
-        return userService.register(form)
-                .thenReturn("redirect:/main/items");
+//        return userService.register(form)
+//                .thenReturn("redirect:/main/items");
+        return Mono.just("register");
     }
 }

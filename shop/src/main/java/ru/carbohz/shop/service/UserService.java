@@ -2,6 +2,8 @@ package ru.carbohz.shop.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -15,54 +17,60 @@ import java.math.BigDecimal;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class UserService {
+public class UserService implements ReactiveUserDetailsService {
     private final UserRepository userRepository;
     public final PasswordEncoder passwordEncoder;
 
-    public Mono<User> register(RegisterUserForm form) {
-        return validateUserDoesNotExist(form)
-                .then(Mono.defer(() -> {
-                    final String username = form.getUsername();
-                    final String password = passwordEncoder.encode(form.getPassword());
-                    final BigDecimal amount = BigDecimal.valueOf(100500); // FIXME
-                    return insert(new User(username, password, amount));
-                }))
-                .doOnSuccess(user -> {
-                    log.info("User {} registered successfully", user.getName());
-                })
-                .doOnError(error -> {
-                    log.error("User registration failed for {}", form.getUsername(), error);
-                });
+    @Override
+    public Mono<UserDetails> findByUsername(String username) {
+        return userRepository.findByName(username)
+                .cast(UserDetails.class);
     }
 
-    public Mono<User> findByName(String name) {
-        return userRepository.findByName(name);
-    }
-
-    public Mono<User> insert(User user) {
-        return userRepository.save(user);
-    }
-
-    public Mono<User> update(User user) {
-        return userRepository.save(user);
-    }
-
-    public Mono<User> deleteById(Long id) {
-        return userRepository.findById(id)
-                .flatMap(u -> userRepository.deleteById(id).thenReturn(u));
-    }
-
-    private Mono<Void> validateUserDoesNotExist(RegisterUserForm form) {
-        final String username = form.getUsername();
-        return userRepository.existsByName(username)
-                .flatMap(usernameExists -> {
-                    if (usernameExists) {
-                        final String message = String.format("Username %s already exists", username);
-                        log.info(message);
-                        return Mono.error(new UserAlreadyExistsException(message));
-                    } else {
-                        return Mono.empty();
-                    }
-                });
-    }
+//    public Mono<User> register(RegisterUserForm form) {
+//        return validateUserDoesNotExist(form)
+//                .then(Mono.defer(() -> {
+//                    final String username = form.getUsername();
+//                    final String password = passwordEncoder.encode(form.getPassword());
+//                    final BigDecimal amount = BigDecimal.valueOf(100500); // FIXME
+//                    return insert(new User(username, password, amount));
+//                }))
+//                .doOnSuccess(user -> {
+//                    log.info("User {} registered successfully", user.getName());
+//                })
+//                .doOnError(error -> {
+//                    log.error("User registration failed for {}", form.getUsername(), error);
+//                });
+//    }
+//
+//    public Mono<User> findByName(String name) {
+//        return userRepository.findByName(name);
+//    }
+//
+//    public Mono<User> insert(User user) {
+//        return userRepository.save(user);
+//    }
+//
+//    public Mono<User> update(User user) {
+//        return userRepository.save(user);
+//    }
+//
+//    public Mono<User> deleteById(Long id) {
+//        return userRepository.findById(id)
+//                .flatMap(u -> userRepository.deleteById(id).thenReturn(u));
+//    }
+//
+//    private Mono<Void> validateUserDoesNotExist(RegisterUserForm form) {
+//        final String username = form.getUsername();
+//        return userRepository.existsByName(username)
+//                .flatMap(usernameExists -> {
+//                    if (usernameExists) {
+//                        final String message = String.format("Username %s already exists", username);
+//                        log.info(message);
+//                        return Mono.error(new UserAlreadyExistsException(message));
+//                    } else {
+//                        return Mono.empty();
+//                    }
+//                });
+//    }
 }

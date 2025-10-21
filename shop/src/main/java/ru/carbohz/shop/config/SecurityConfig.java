@@ -36,7 +36,7 @@ public class SecurityConfig {
                         .pathMatchers(HttpMethod.GET, "/", "/main/items", "/items/*", "/images/*").permitAll()
                         .pathMatchers("/register").permitAll()
                         .pathMatchers("/login").permitAll()
-                        .pathMatchers("/favicon.ico").permitAll()
+                        .pathMatchers("/favicon.ico", "/.well-known/appspecific/com.chrome.devtools.json").permitAll()
                         .anyExchange().authenticated()
                 )
 //                .oauth2Client(Customizer.withDefaults())

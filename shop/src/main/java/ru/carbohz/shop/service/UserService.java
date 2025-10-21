@@ -7,7 +7,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-import ru.carbohz.shop.exception.UserAlreadyExistsException;
 import ru.carbohz.shop.model.RegisterUserForm;
 import ru.carbohz.shop.model.User;
 import ru.carbohz.shop.repository.UserRepository;
@@ -27,50 +26,25 @@ public class UserService implements ReactiveUserDetailsService {
                 .cast(UserDetails.class);
     }
 
-//    public Mono<User> register(RegisterUserForm form) {
-//        return validateUserDoesNotExist(form)
-//                .then(Mono.defer(() -> {
-//                    final String username = form.getUsername();
-//                    final String password = passwordEncoder.encode(form.getPassword());
-//                    final BigDecimal amount = BigDecimal.valueOf(100500); // FIXME
-//                    return insert(new User(username, password, amount));
-//                }))
-//                .doOnSuccess(user -> {
-//                    log.info("User {} registered successfully", user.getName());
-//                })
-//                .doOnError(error -> {
-//                    log.error("User registration failed for {}", form.getUsername(), error);
-//                });
-//    }
-//
-//    public Mono<User> findByName(String name) {
-//        return userRepository.findByName(name);
-//    }
-//
-//    public Mono<User> insert(User user) {
-//        return userRepository.save(user);
-//    }
-//
-//    public Mono<User> update(User user) {
-//        return userRepository.save(user);
-//    }
-//
-//    public Mono<User> deleteById(Long id) {
-//        return userRepository.findById(id)
-//                .flatMap(u -> userRepository.deleteById(id).thenReturn(u));
-//    }
-//
-//    private Mono<Void> validateUserDoesNotExist(RegisterUserForm form) {
-//        final String username = form.getUsername();
-//        return userRepository.existsByName(username)
-//                .flatMap(usernameExists -> {
-//                    if (usernameExists) {
-//                        final String message = String.format("Username %s already exists", username);
-//                        log.info(message);
-//                        return Mono.error(new UserAlreadyExistsException(message));
-//                    } else {
-//                        return Mono.empty();
-//                    }
-//                });
-//    }
+    public Mono<User> registerUser(RegisterUserForm request) {
+        return validateRegistration(request)
+                .then(userRepository.existsByName(request.getUsername()))
+                .flatMap(usernameExists -> {
+                    if (usernameExists) {
+                        return Mono.error(new RuntimeException("Username already exists"));
+                    }
+
+                    User user = new User(
+                            request.getUsername(),
+                            passwordEncoder.encode(request.getPassword()),
+                            BigDecimal.valueOf(100500) // TODO в переменные окружения
+                    );
+
+                    return userRepository.save(user);
+                });
+    }
+
+    private Mono<Void> validateRegistration(RegisterUserForm request) {
+        return Mono.empty(); // TODO можно добавить интересные проверки на валидность
+    }
 }

@@ -14,6 +14,9 @@ public class Cart {
     private Long id;
 
     @Column
+    private Long userId;
+
+    @Column
     private Long count;
 
     @Column

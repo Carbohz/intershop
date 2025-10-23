@@ -17,6 +17,12 @@ public class OrderItem {
     private Long itemId;
 
     @Column
+    private Long orderId;
+
+    @Column
+    private Long userId;
+
+    @Column
     private String title;
 
     @Column
@@ -30,6 +36,4 @@ public class OrderItem {
 
     @Column
     private Long count;
-
-    private Long orderId;
 }

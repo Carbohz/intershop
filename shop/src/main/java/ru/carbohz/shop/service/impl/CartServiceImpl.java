@@ -38,8 +38,8 @@ public class CartServiceImpl implements CartService {
 
     @Override
     @Transactional
-    public Mono<CartItemsDto> getCartItems() {
-        return cartRepository.findAll()
+    public Mono<CartItemsDto> getCartItems(Long userId) {
+        return cartRepository.findAllByUserId(userId)
                 .collectList()
                 .flatMap(carts -> {
                     if (carts.isEmpty()) {
@@ -75,16 +75,16 @@ public class CartServiceImpl implements CartService {
 
     @Override
     @Transactional
-    public Mono<Void> changeItemsInCart(Long itemId, Action action) {
+    public Mono<Void> changeItemsInCart(Long itemId, Long userId, Action action) {
         return switch (action) {
-            case PLUS -> handlePlusAction(itemId);
-            case MINUS -> handleMinusAction(itemId);
-            case DELETE -> handleDeleteAction(itemId);
+            case PLUS -> handlePlusAction(itemId, userId);
+            case MINUS -> handleMinusAction(itemId, userId);
+            case DELETE -> handleDeleteAction(itemId, userId);
         };
     }
 
-    private Mono<Void> handlePlusAction(Long itemId) {
-        return cartRepository.findByItem_Id(itemId)
+    private Mono<Void> handlePlusAction(Long itemId, Long userId) {
+        return cartRepository.findByItemIdAndUserId(itemId, userId)
                 .flatMap(cart -> {
                     cart.setCount(cart.getCount() + 1);
                     return cartRepository.save(cart);
@@ -94,6 +94,7 @@ public class CartServiceImpl implements CartService {
                                 .flatMap(item -> {
                                     Cart newCart = new Cart();
                                     newCart.setItemId(item.getId());
+                                    newCart.setUserId(userId);
                                     newCart.setCount(1L);
                                     return cartRepository.save(newCart);
                                 })
@@ -101,8 +102,8 @@ public class CartServiceImpl implements CartService {
                 .then();
     }
 
-    private Mono<Void> handleMinusAction(Long itemId) {
-        return cartRepository.findByItem_Id(itemId)
+    private Mono<Void> handleMinusAction(Long itemId, Long userId) {
+        return cartRepository.findByItemIdAndUserId(itemId, userId)
                 .flatMap(cart -> {
                     if (cart.getCount() == 1) {
                         return cartRepository.deleteById(cart.getId());
@@ -114,8 +115,8 @@ public class CartServiceImpl implements CartService {
                 .then();
     }
 
-    private Mono<Void> handleDeleteAction(Long itemId) {
-        return cartRepository.deleteByItem_Id(itemId);
+    private Mono<Void> handleDeleteAction(Long itemId, Long userId) {
+        return cartRepository.deleteByItem_Id(itemId, userId);
     }
 
     @Override

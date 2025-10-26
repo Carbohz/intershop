@@ -5,6 +5,6 @@ import reactor.core.publisher.Mono;
 import ru.carbohz.shop.dto.OrderDto;
 
 public interface OrderService {
-    Flux<OrderDto> getOrders();
-    Mono<OrderDto> getOrderById(long orderId);
+    Flux<OrderDto> getOrders(Long userId);
+    Mono<OrderDto> getOrderById(long orderId, Long userId);
 }

@@ -39,7 +39,9 @@ public class CartMapper {
     }
 
     public Order toOrder(List<Cart> carts, Map<Long, Item> itemMap) {
+        Long userId = carts.getFirst().getUserId();
         Order order = new Order();
+        order.setUserId(userId);
         order.setTotalSum(totalSum(carts, itemMap));
         return order;
     }
@@ -54,6 +56,7 @@ public class CartMapper {
     }
 
     public List<OrderItem> toOrderItems(List<Cart> carts, Long orderId, Map<Long, Item> itemMap) {
+        Long userId = carts.getFirst().getUserId();
         return carts.stream()
                 .map(cart -> {
                     Item item = itemMap.get(cart.getItemId());
@@ -61,6 +64,7 @@ public class CartMapper {
 
                     OrderItem orderItem = new OrderItem();
                     orderItem.setOrderId(orderId);
+                    orderItem.setUserId(userId);
                     orderItem.setItemId(cart.getItemId());
                     orderItem.setTitle(item.getTitle());
                     orderItem.setDescription(item.getDescription());

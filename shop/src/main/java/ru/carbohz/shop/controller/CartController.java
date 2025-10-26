@@ -60,13 +60,20 @@ public class CartController {
     }
 
     @PostMapping("/buy")
-    public Mono<String> buy(Model model) {
-        return cartService.createOrder()
-                .flatMap(orderId ->
-                        Mono.just("redirect:/orders/" + orderId + "?newOrder=true"))
-                .onErrorResume(e -> {
-                    model.addAttribute("error", "Failed to create order: " + e.getMessage());
-                    return Mono.just("error");
-                });
+    public Mono<String> buy(Model model, ServerWebExchange exchange) {
+        return exchange.getSession().flatMap(webSession -> {
+            // Получаем данные пользователя из сессии
+            final SecurityContext ctx = webSession.getAttribute(DEFAULT_SPRING_SECURITY_CONTEXT_ATTR_NAME);
+            final Authentication auth = ctx.getAuthentication();
+            final User user = (User) auth.getPrincipal();
+
+            return cartService.createOrder(user.getId())
+                    .flatMap(orderId ->
+                            Mono.just("redirect:/orders/" + orderId + "?newOrder=true"))
+                    .onErrorResume(e -> {
+                        model.addAttribute("error", "Failed to create order: " + e.getMessage());
+                        return Mono.just("error");
+                    });
+        });
     }
 }

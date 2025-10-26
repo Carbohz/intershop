@@ -22,9 +22,8 @@ public class OrderServiceImpl implements OrderService {
     private final OrderMapper orderMapper;
 
     @Override
-    public Flux<OrderDto> getOrders() {
-        log.trace("Returning orders reactively");
-        return orderRepository.findAll()
+    public Flux<OrderDto> getOrders(final Long userId) {
+        return orderRepository.findAllByUserId(userId)
                 .flatMap(this::enrichOrderWithItems)
                 .onErrorResume(e -> {
                     log.error("Error fetching orders: {}", e.getMessage());
@@ -33,9 +32,9 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Mono<OrderDto> getOrderById(long orderId) {
-        log.trace("Fetching order by ID: {}", orderId);
-        return orderRepository.findById(orderId)
+    public Mono<OrderDto> getOrderById(long orderId, Long userId) {
+        log.info("Fetching order by ID: {}", orderId);
+        return orderRepository.findByIdAndUserId(orderId, userId)
                 .flatMap(this::enrichOrderWithItems)
                 .switchIfEmpty(Mono.defer(() -> {
                     String message = "Order with id %d not found".formatted(orderId);

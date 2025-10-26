@@ -121,8 +121,8 @@ public class CartServiceImpl implements CartService {
 
     @Override
     @Transactional
-    public Mono<Long> createOrder() {
-        return cartRepository.findAll()
+    public Mono<Long> createOrder(Long userId) {
+        return cartRepository.findAllByUserId(userId)
                 .collectList()
                 .flatMap(carts -> {
                     if (carts.isEmpty()) {

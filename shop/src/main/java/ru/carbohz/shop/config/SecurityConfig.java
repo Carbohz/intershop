@@ -33,9 +33,8 @@ public class SecurityConfig {
                 .addFilterAt(authFilter, SecurityWebFiltersOrder.AUTHENTICATION)
                 .securityContextRepository(securityContextRepository())
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers(HttpMethod.GET, "/", "/main/items", "/items/*", "/images/*").permitAll()
-                        .pathMatchers("/register").permitAll()
-                        .pathMatchers("/login").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/", "/main/items", "/main/items/*").permitAll()
+                        .pathMatchers("/register", "/login", "/logout").permitAll()
                         .pathMatchers("/favicon.ico", "/.well-known/appspecific/com.chrome.devtools.json").permitAll()
                         .anyExchange().authenticated()
                 )

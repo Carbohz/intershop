@@ -8,10 +8,10 @@
 </head>
 
 <body>
-<a href="/orders" style="float:right;">
+<a href="/orders" style="float:right;" sec:authorize="isAuthenticated()">
     <b>ЗАКАЗЫ &cudarrr;</b>
 </a>
-<a href="/cart/items" style="float:right;">
+<a href="/cart/items" style="float:right;" sec:authorize="isAuthenticated()">
     <b>КОРЗИНА &cudarrr;</b>
 </a>
 <a href="/logout" style="float:right;" sec:authorize="isAuthenticated()">
@@ -81,7 +81,7 @@
                 <tr>
                     <td th:text="${item.getDescription()}"></td>
                 </tr>
-                <tr>
+                <tr sec:authorize="isAuthenticated()">
                     <td>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div style="display: flex; align-items: center;">

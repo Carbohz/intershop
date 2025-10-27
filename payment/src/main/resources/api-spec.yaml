@@ -3,11 +3,19 @@ info:
   title: Rest API платежей
   version: 1.0.0
 paths:
-  /balance:
+  /balance/{userId}:
     get:
       tags:
         - Payment
       summary: Получение баланса на счёте
+      parameters:
+        - name: userId
+          in: path
+          description: Идентификатор пользователя
+          required: true
+          schema:
+            type: integer
+            format: int64
       responses:
         '200':
           description: Баланс на счёте
@@ -21,6 +29,9 @@ paths:
                     format: bigdecimal
                 required:
                   - balance
+        '404':
+          description: Пользователь не найден
+  /balance:
     post:
       tags:
         - Payment
@@ -31,12 +42,16 @@ paths:
             schema:
               type: object
               properties:
+                userId:
+                  type: integer
+                  format: int64
                 sum:
                   type: number
                   format: bigdecimal
                   minimum: 0
                   exclusiveMinimum: false
               required:
+                - userId
                 - sum
       responses:
         '200':

@@ -137,6 +137,7 @@ public class CartServiceImpl implements CartService {
                                 Order order = cartMapper.toOrder(carts, itemMap);
 
                                 final var balanceRequest = new BalancePostRequest();
+                                balanceRequest.setUserId(userId);
                                 balanceRequest.setSum(BigDecimal.valueOf(order.getTotalSum()));
                                 return oAuth2Service.getTokenValue()
                                         .flatMap(accessToken -> {

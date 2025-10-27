@@ -10,6 +10,7 @@ import org.springframework.security.oauth2.server.resource.authentication.Reacti
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import reactor.core.publisher.Flux;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
@@ -27,6 +28,9 @@ public class SecurityConfig {
                             var jwtAuthenticationConverter = new ReactiveJwtAuthenticationConverter();
                             jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwt -> {
                                 List<String> roles = jwt.getClaim("roles");
+                                if (roles == null) {
+                                    roles = new ArrayList<>();
+                                }
                                 return Flux.fromIterable(roles)
                                         .map(SimpleGrantedAuthority::new);
                             });

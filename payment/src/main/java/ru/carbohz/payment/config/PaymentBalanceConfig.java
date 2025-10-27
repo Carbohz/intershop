@@ -12,7 +12,7 @@ public class PaymentBalanceConfig {
     private BigDecimal balance;
 
     @Bean
-    public BigDecimal getBalance() {
+    public BigDecimal getDefaultBalance() {
         return balance;
     }
 }

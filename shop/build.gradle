@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'ru.carbohz.shop'
-version = 'v3.0'
+version = 'v4.0'
 
 java {
     toolchain {
@@ -87,7 +87,7 @@ jib {
     }
     to {
         image = 'carbohz-shop' // Your image name
-        tags = ['v3.0'] // Optional tags
+        tags = ['v4.0'] // Optional tags
     }
     container {
         jvmFlags = ['-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005']

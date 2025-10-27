@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'ru.carbohz.payment'
-version = 'v3.0'
+version = 'v4.0'
 
 java {
     toolchain {
@@ -32,6 +32,11 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
     implementation 'org.springframework.security:spring-security-oauth2-jose'
+    developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
+    implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+    implementation 'org.liquibase:liquibase-core'
+    runtimeOnly 'org.postgresql:r2dbc-postgresql'
+    runtimeOnly 'org.postgresql:postgresql'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.5'
@@ -79,11 +84,11 @@ jib {
     }
     to {
         image = 'carbohz-payment' // Your image name
-        tags = ['v3.0'] // Optional tags
+        tags = ['v4.0'] // Optional tags
     }
     container {
         jvmFlags = ['-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005']
-        ports = ['8081'] // Expose port 8080 (Spring Boot default)
+        ports = ['8081']
         creationTime = 'USE_CURRENT_TIMESTAMP' // Optional
         mainClass = 'ru.carbohz.payment.PaymentApplication'
     }

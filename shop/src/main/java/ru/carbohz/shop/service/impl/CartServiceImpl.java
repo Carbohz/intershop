@@ -3,14 +3,17 @@ package ru.carbohz.shop.service.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.carbohz.shop.api.PaymentApi;
 import ru.carbohz.shop.api.model.BalancePostRequest;
 import ru.carbohz.shop.dto.CartItemsDto;
 import ru.carbohz.shop.dto.ItemDto;
+import ru.carbohz.shop.exception.NotEnoughBalanceException;
 import ru.carbohz.shop.mapper.CartMapper;
 import ru.carbohz.shop.model.*;
 import ru.carbohz.shop.repository.CartRepository;
@@ -155,9 +158,17 @@ public class CartServiceImpl implements CartService {
                                                                             .thenReturn(savedOrder.getId());
                                                                 });
                                                     })
+                                                    .onErrorResume(WebClientResponseException.class, ex -> {
+                                                        if (ex.getStatusCode() == HttpStatus.CONFLICT) {
+                                                            log.warn("User {} has not enough money on balance", userId);
+                                                            return Mono.error(new NotEnoughBalanceException("Not enough money on balance"));
+                                                        }
+                                                        log.warn("Failed to access Payment Service: {}", ex.getMessage(), ex);
+                                                        return Mono.error(new RuntimeException(ex));
+                                                    })
                                                     .onErrorResume(throwable -> {
-                                                        log.info("failed to save order: ", throwable);
-                                                        return Mono.error(new IllegalStateException("failed to save order: " + throwable.getMessage()));
+                                                        log.info("Failed to save order: ", throwable);
+                                                        return Mono.error(new IllegalStateException("Failed to save order: " + throwable.getMessage()));
                                                     });
                                         });
                             });

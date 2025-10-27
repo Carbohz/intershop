@@ -11,8 +11,6 @@ import ru.carbohz.shop.model.RegisterUserForm;
 import ru.carbohz.shop.model.User;
 import ru.carbohz.shop.repository.UserRepository;
 
-import java.math.BigDecimal;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -36,8 +34,7 @@ public class UserService implements ReactiveUserDetailsService {
 
                     User user = new User(
                             request.getUsername(),
-                            passwordEncoder.encode(request.getPassword()),
-                            BigDecimal.valueOf(100500) // TODO в переменные окружения
+                            passwordEncoder.encode(request.getPassword())
                     );
 
                     return userRepository.save(user);

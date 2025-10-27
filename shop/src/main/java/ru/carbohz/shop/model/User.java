@@ -9,7 +9,6 @@ import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 
@@ -27,9 +26,6 @@ public class User implements UserDetails {
     @Column
     private String password;
 
-    @Column
-    private BigDecimal balance;
-
 
     public User(Long id, String name, String password) {
         this.id = id;
@@ -37,10 +33,9 @@ public class User implements UserDetails {
         this.password = password;
     }
 
-    public User(String name, String password, BigDecimal balance) {
+    public User(String name, String password) {
         this.name = name;
         this.password = password;
-        this.balance = balance;
     }
 
     @Override

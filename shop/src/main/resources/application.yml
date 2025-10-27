@@ -28,12 +28,15 @@ spring:
   security:
     oauth2:
       client:
+        provider:
+          keycloak:
+            issuer-uri: http://localhost:18080/realms/master # Адрес сервера авторизации для получения токена
         registration:
           keycloak-rest-client: # Описание клиента OAuth2
             provider: keycloak
             authorizationGrantType: client_credentials
             client-id: rest-client
-            client-secret: 8lHWta5ggYFsrJN5eUEKn3j8YmZqLbSl
+            client-secret: 3OEqGe8RMuBIcXW5wOpuS2AWfP9pZDMX
             scope: profile
             clientAuthenticationMethod: client_secret_post # Способ передачи секрета
   thymeleaf:

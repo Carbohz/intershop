@@ -2,6 +2,7 @@ package ru.carbohz.shop.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
@@ -18,6 +19,7 @@ import ru.carbohz.shop.repository.OrderItemRepository;
 import ru.carbohz.shop.repository.OrderRepository;
 import ru.carbohz.shop.service.CartService;
 import ru.carbohz.shop.service.ItemService;
+import ru.carbohz.shop.service.OAuth2Service;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -35,6 +37,7 @@ public class CartServiceImpl implements CartService {
     private final OrderItemRepository orderItemRepository;
     private final PaymentApi paymentApi;
     private final ItemService itemService;
+    private final OAuth2Service oAuth2Service;
 
     @Override
     @Transactional
@@ -135,22 +138,26 @@ public class CartServiceImpl implements CartService {
 
                                 final var balanceRequest = new BalancePostRequest();
                                 balanceRequest.setSum(BigDecimal.valueOf(order.getTotalSum()));
-                                return paymentApi.balancePostWithHttpInfo(balanceRequest)
-                                        .flatMap(resp -> {
-                                            log.info("enough balance, processing order");
-                                            return orderRepository.save(order)
-                                                    .flatMap(savedOrder -> {
-                                                        List<OrderItem> orderItems =
-                                                                cartMapper.toOrderItems(carts, savedOrder.getId(), itemMap);
+                                return oAuth2Service.getTokenValue()
+                                        .flatMap(accessToken -> {
+                                            paymentApi.getApiClient().addDefaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+                                            return paymentApi.balancePostWithHttpInfo(balanceRequest)
+                                                    .flatMap(resp -> {
+                                                        log.info("enough balance, processing order");
+                                                        return orderRepository.save(order)
+                                                                .flatMap(savedOrder -> {
+                                                                    List<OrderItem> orderItems =
+                                                                            cartMapper.toOrderItems(carts, savedOrder.getId(), itemMap);
 
-                                                        return orderItemRepository.saveAll(orderItems)
-                                                                .then(cartRepository.deleteAll())
-                                                                .thenReturn(savedOrder.getId());
+                                                                    return orderItemRepository.saveAll(orderItems)
+                                                                            .then(cartRepository.deleteAll())
+                                                                            .thenReturn(savedOrder.getId());
+                                                                });
+                                                    })
+                                                    .onErrorResume(throwable -> {
+                                                        log.info("failed to save order: ", throwable);
+                                                        return Mono.error(new IllegalStateException("failed to save order: " + throwable.getMessage()));
                                                     });
-                                        })
-                                        .onErrorResume(throwable -> {
-                                            log.info("failed to save order: ", throwable);
-                                            return Mono.error(new IllegalStateException("failed to save order: " + throwable.getMessage()));
                                         });
                             });
                 });

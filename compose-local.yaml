@@ -28,18 +28,18 @@ services:
     networks:
       - app-network
 
-#  keycloak:
-#    image: quay.io/keycloak/keycloak:26.3.2
-#    ports:
-#      - '8082:8080'
-#    environment:
-#      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
-#      - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
-#    volumes:
-#      - ./keycloak:/opt/keycloak/data/import
-#    command: start-dev --import-realm --verbose
-#    networks:
-#      - app-network
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.3.2
+    ports:
+      - '18080:8080'
+    environment:
+      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import
+    command: start-dev --import-realm --verbose
+    networks:
+      - app-network
 
 networks:
   app-network:

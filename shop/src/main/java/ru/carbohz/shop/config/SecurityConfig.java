@@ -57,7 +57,7 @@ public class SecurityConfig {
                         .pathMatchers("/favicon.ico", "/.well-known/appspecific/com.chrome.devtools.json").permitAll()
                         .anyExchange().authenticated()
                 )
-//                .oauth2Client(Customizer.withDefaults())
+                .oauth2Client(Customizer.withDefaults())
                 .formLogin(Customizer.withDefaults())
                 .logout(logout -> logout
                         .logoutUrl("/logout")

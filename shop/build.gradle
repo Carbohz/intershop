@@ -52,6 +52,7 @@ dependencies {
     testImplementation 'org.testcontainers:postgresql'
     testImplementation 'org.testcontainers:r2dbc'
     testImplementation 'com.redis:testcontainers-redis:2.2.2'
+    testImplementation 'com.github.dasniko:testcontainers-keycloak:3.9.0'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.jsoup:jsoup:1.20.1'
     testImplementation 'io.projectreactor:reactor-test:3.7.8'

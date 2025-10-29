@@ -2,17 +2,20 @@ package ru.carbohz.shop.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.awaitility.Awaitility;
+import dasniko.testcontainers.keycloak.KeycloakContainer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import ru.carbohz.shop.config.KeycloakTestcontainersConfiguration;
 import ru.carbohz.shop.config.PostgresTestcontainersConfiguration;
 import ru.carbohz.shop.config.RedisTestcontainersConfiguration;
 import ru.carbohz.shop.dto.ItemDto;
@@ -35,7 +38,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
-@Import({PostgresTestcontainersConfiguration.class, RedisTestcontainersConfiguration.class})
+@Import({PostgresTestcontainersConfiguration.class, RedisTestcontainersConfiguration.class, KeycloakTestcontainersConfiguration.class})
 @ActiveProfiles("test")
 public class ItemServiceImplIT {
 
@@ -50,6 +53,13 @@ public class ItemServiceImplIT {
 
     @Autowired
     private RedisTemplate<String, String> redisTemplate;
+
+    @DynamicPropertySource
+    static void configureProperties(DynamicPropertyRegistry registry) {
+        int foo = 42;
+        registry.add("spring.security.oauth2.client.provider.keycloak.issuer-uri",
+                () -> "http://localhost:%d/realms/master".formatted(KeycloakTestcontainersConfiguration.keycloak.getMappedPort(8080)));
+    }
 
     @Test
     void findItemById_isCached() {

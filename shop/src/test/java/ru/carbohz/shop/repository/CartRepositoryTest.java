@@ -12,6 +12,7 @@ import ru.carbohz.shop.config.NoCacheTestConfiguration;
 import ru.carbohz.shop.config.PostgresTestcontainersConfiguration;
 import ru.carbohz.shop.model.Cart;
 import ru.carbohz.shop.model.Item;
+import ru.carbohz.shop.model.User;
 
 import java.util.Optional;
 
@@ -28,13 +29,23 @@ class CartRepositoryTest {
     @Autowired
     ItemRepository itemRepository;
 
+    @Autowired
+    UserRepository userRepository;
+
     @BeforeEach
     void setUp() {
+        User user = new User();
+        user.setName("admin");
+        user.setPassword("admin");
+        User saved = userRepository.save(user).block();
+        Long userId = saved.getId();
+
         Optional<Item> maybeItem = itemRepository.findById(1L).blockOptional();
         assertThat(maybeItem).isPresent();
         Item item = maybeItem.get();
 
         Cart cart = new Cart();
+        cart.setUserId(userId);
         cart.setItemId(item.getId());
         cart.setCount(10L);
         cartRepository.save(cart).block();
@@ -43,6 +54,7 @@ class CartRepositoryTest {
     @AfterEach
     void tearDown() {
         cartRepository.deleteAll().block();
+        userRepository.deleteAll().block();
     }
 
     @Test
@@ -56,39 +68,12 @@ class CartRepositoryTest {
     }
 
     @Test
-    void increaseCountForItem() {
-        // When
-        StepVerifier.create(cartRepository.increaseCountForItem(1L))
-                .assertNext(updatedRows -> assertThat(updatedRows).isEqualTo(1))
-                .verifyComplete();
-
-        // Then
-        StepVerifier.create(cartRepository.findByItem_Id(1L))
-                .assertNext(cart -> assertThat(cart.getCount()).isEqualTo(11L))
-                .verifyComplete();
-    }
-
-    @Test
-    void decreaseCountForItem() {
-        Optional<Cart> maybeCart = cartRepository.findByItem_Id(1L).blockOptional();
-        assertThat(maybeCart).isPresent();
-        Cart found = maybeCart.get();
-
-        cartRepository.decreaseCountForItem(found.getItemId()).block();
-
-        Optional<Cart> maybeCart2 = cartRepository.findByItem_Id(1L).blockOptional();
-        assertThat(maybeCart2).isPresent();
-        Cart found2 = maybeCart2.get();
-        assertThat(found2.getCount()).isEqualTo(found.getCount() - 1);
-    }
-
-    @Test
     void deleteByItem_Id() {
         Optional<Cart> maybeCart = cartRepository.findByItem_Id(1L).blockOptional();
         assertThat(maybeCart).isPresent();
         Cart found = maybeCart.get();
 
-        cartRepository.deleteByItem_Id(found.getItemId()).block();
+        cartRepository.deleteByItem_Id(found.getItemId(), found.getUserId()).block();
 
         Optional<Cart> maybeCart2 = cartRepository.findByItem_Id(1L).blockOptional();
         assertThat(maybeCart2).isEmpty();

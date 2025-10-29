@@ -26,11 +26,13 @@ public class CartControllerTest {
     @Autowired
     private WebTestClient webTestClient;
 
+    private static final Long USER_ID = 1337L;
+
     @Test
     public void getCartItems() {
         CartItemsDto cartItemsDto = new CartItemsDto();
 
-        when(cartService.getCartItems()).thenReturn(Mono.just(cartItemsDto));
+        when(cartService.getCartItems(USER_ID)).thenReturn(Mono.just(cartItemsDto));
 
         webTestClient.get().uri("/cart/items")
                 .exchange()
@@ -44,7 +46,7 @@ public class CartControllerTest {
                     assertThat(doc.title()).isEqualTo("Корзина товаров");
                 });
 
-        verify(cartService, times(1)).getCartItems();
+        verify(cartService, times(1)).getCartItems(USER_ID);
         verifyNoMoreInteractions(cartService);
     }
 
@@ -52,7 +54,7 @@ public class CartControllerTest {
     public void changeItemsCount() {
         Long itemId = 1L;
         Action action = Action.DELETE;
-        when(cartService.changeItemsInCart(itemId, action)).thenReturn(Mono.empty());
+        when(cartService.changeItemsInCart(itemId, USER_ID, action)).thenReturn(Mono.empty());
 
         webTestClient.post()
                 .uri(UriComponentsBuilder.fromPath("/cart/items/{itemId}")
@@ -62,7 +64,7 @@ public class CartControllerTest {
                 .expectStatus().is3xxRedirection()
                 .expectHeader().valueEquals("Location", "/cart/items");
 
-        verify(cartService, times(1)).changeItemsInCart(itemId, action);
+        verify(cartService, times(1)).changeItemsInCart(itemId, USER_ID, action);
         verifyNoMoreInteractions(cartService);
     }
 
@@ -70,7 +72,7 @@ public class CartControllerTest {
     public void buy() {
         Long orderId = 1L;
 
-        when(cartService.createOrder()).thenReturn(Mono.just(orderId));
+        when(cartService.createOrder(USER_ID)).thenReturn(Mono.just(orderId));
 
         String expectedUrl = "/orders/" + orderId + "?newOrder=true";
 
@@ -80,7 +82,7 @@ public class CartControllerTest {
                 .expectStatus().is3xxRedirection()
                 .expectHeader().valueEquals("Location", expectedUrl);
 
-        verify(cartService, times(1)).createOrder();
+        verify(cartService, times(1)).createOrder(USER_ID);
         verifyNoMoreInteractions(cartService);
     }
 }

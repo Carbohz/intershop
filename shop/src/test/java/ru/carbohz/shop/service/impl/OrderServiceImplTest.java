@@ -40,21 +40,24 @@ class OrderServiceImplTest {
     @Test
     void getOrders() {
         // Create test orders (without items - they're in separate table)
+        Long userId = 1337L;
         Order order1 = new Order();
         order1.setId(1L);
+        order1.setUserId(userId);
         order1.setTotalSum(100500L);
 
         Order order2 = new Order();
         order2.setId(2L);
+        order2.setUserId(userId);
         order2.setTotalSum(837L);
 
         // Create test order items
-        OrderItem order1Item1 = createOrderItem(1L, 10L, "Item 1", 100000L, 1L, 1L);
-        OrderItem order1Item2 = createOrderItem(2L, 14L, "Item 2", 250L, 2L, 1L);
-        OrderItem order2Item1 = createOrderItem(3L, 1440L, "Item 3", 837L, 1L, 2L);
+        OrderItem order1Item1 = createOrderItem(1L, 10L, userId, "Item 1", 100000L, 1L, 1L);
+        OrderItem order1Item2 = createOrderItem(2L, 14L, userId, "Item 2", 250L, 2L, 1L);
+        OrderItem order2Item1 = createOrderItem(3L, 1440L, userId, "Item 3", 837L, 1L, 2L);
 
         // Mock repository responses
-        when(orderRepository.findAll()).thenReturn(Flux.just(order1, order2));
+        when(orderRepository.findAllByUserId(userId)).thenReturn(Flux.just(order1, order2));
         when(orderItemRepository.findByOrderId(1L)).thenReturn(Flux.just(order1Item1, order1Item2));
         when(orderItemRepository.findByOrderId(2L)).thenReturn(Flux.just(order2Item1));
 
@@ -79,7 +82,7 @@ class OrderServiceImplTest {
                 .thenReturn(Mono.just(orderDto2));
 
         // Execute and verify
-        Flux<OrderDto> result = orderService.getOrders();
+        Flux<OrderDto> result = orderService.getOrders(userId);
 
         StepVerifier.create(result.collectList())
                 .assertNext(orderDtos -> {
@@ -103,16 +106,18 @@ class OrderServiceImplTest {
     @Test
     void getOrderById() {
         // Create test order
+        Long userId = 1337L;
         Order order = new Order();
+        order.setUserId(userId);
         order.setId(1L);
         order.setTotalSum(100500L);
 
         // Create test order items
-        OrderItem item1 = createOrderItem(1L, 10L, "Item 1", 100000L, 1L, 1L);
-        OrderItem item2 = createOrderItem(2L, 14L, "Item 2", 250L, 2L, 1L);
+        OrderItem item1 = createOrderItem(1L, 10L, userId, "Item 1", 100000L, 1L, 1L);
+        OrderItem item2 = createOrderItem(2L, 14L, userId, "Item 2", 250L, 2L, 1L);
 
         // Mock repository responses
-        when(orderRepository.findById(1L)).thenReturn(Mono.just(order));
+        when(orderRepository.findByIdAndUserId(1L, userId)).thenReturn(Mono.just(order));
         when(orderItemRepository.findByOrderId(1L)).thenReturn(Flux.just(item1, item2));
 
         // Create expected DTO
@@ -128,7 +133,7 @@ class OrderServiceImplTest {
                 .thenReturn(Mono.just(expectedDto));
 
         // Execute and verify
-        Mono<OrderDto> result = orderService.getOrderById(1L);
+        Mono<OrderDto> result = orderService.getOrderById(1L, userId);
 
         StepVerifier.create(result)
                 .assertNext(dto -> {
@@ -155,9 +160,11 @@ class OrderServiceImplTest {
 
     @Test
     void getOrderById_whenOrderNotFound_throwsOrderNotFoundException() {
-        when(orderRepository.findById(1L)).thenReturn(Mono.empty());
+        Long orderId = 1L;
+        Long userId = 1337L;
+        when(orderRepository.findByIdAndUserId(orderId, userId)).thenReturn(Mono.empty());
 
-        Mono<OrderDto> result = orderService.getOrderById(1L);
+        Mono<OrderDto> result = orderService.getOrderById(orderId, userId);
 
         StepVerifier.create(result)
                 .expectErrorMatches(throwable ->
@@ -166,10 +173,11 @@ class OrderServiceImplTest {
                 .verify();
     }
 
-    private OrderItem createOrderItem(Long id, Long itemId, String title, Long price, Long count, Long orderId) {
+    private OrderItem createOrderItem(Long id, Long itemId, Long userId, String title, Long price, Long count, Long orderId) {
         OrderItem item = new OrderItem();
         item.setId(id);
         item.setItemId(itemId);
+        item.setUserId(userId);
         item.setTitle(title);
         item.setPrice(price);
         item.setCount(count);

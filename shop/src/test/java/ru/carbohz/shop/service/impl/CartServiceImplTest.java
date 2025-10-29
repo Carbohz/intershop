@@ -3,6 +3,7 @@ package ru.carbohz.shop.service.impl;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -10,6 +11,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import ru.carbohz.shop.ApiClient;
 import ru.carbohz.shop.api.PaymentApi;
 import ru.carbohz.shop.dto.CartItemsDto;
 import ru.carbohz.shop.dto.ItemDto;
@@ -24,9 +26,9 @@ import ru.carbohz.shop.repository.ItemRepository;
 import ru.carbohz.shop.repository.OrderItemRepository;
 import ru.carbohz.shop.repository.OrderRepository;
 import ru.carbohz.shop.service.ItemService;
+import ru.carbohz.shop.service.OAuth2Service;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,6 +61,9 @@ class CartServiceImplTest {
     @MockitoBean
     private ItemService itemService;
 
+    @MockitoBean
+    private OAuth2Service oAuth2Service;
+
     @Autowired
     private CartServiceImpl cartService;
 
@@ -66,16 +71,17 @@ class CartServiceImplTest {
     void getCartItems_whenCartIsPresent() {
         // Setup test data
         List<Cart> carts = createCarts();
+        Long userId = carts.getFirst().getUserId();
 
         // Mock repository responses
-        when(cartRepository.findAll()).thenReturn(Flux.fromIterable(carts));
+        when(cartRepository.findAllByUserId(userId)).thenReturn(Flux.fromIterable(carts));
         when(itemService.findItemById(1L)).thenReturn(
                 Mono.just(new ItemDto(1L, "Item 1", "Description 1", "ImagePath 1", 10L, 12345L)));
         when(itemService.findItemById(2L)).thenReturn(
                 Mono.just(new ItemDto(2L, "Item 2", "Description 2", "ImagePath 2", 1L, 10L)));
 
         // Execute and verify
-        Mono<CartItemsDto> result = cartService.getCartItems();
+        Mono<CartItemsDto> result = cartService.getCartItems(userId);
 
         StepVerifier.create(result)
                 .assertNext(cartItemsDto -> {
@@ -104,7 +110,7 @@ class CartServiceImplTest {
 
         verifyNoInteractions(itemRepository);
         verifyNoInteractions(orderRepository);
-        verify(cartRepository, times(1)).findAll();
+        verify(cartRepository, times(1)).findAllByUserId(userId);
         verifyNoInteractions(orderItemRepository);
         verifyNoInteractions(paymentApi);
         verify(itemService, times(1)).findItemById(1L);
@@ -115,10 +121,10 @@ class CartServiceImplTest {
     @Test
     void getCartItems_whenCartIsEmpty() {
         // Mock repository responses
-        when(cartRepository.findAll()).thenReturn(Flux.empty());
+        when(cartRepository.findAllByUserId(anyLong())).thenReturn(Flux.empty());
 
         // Execute and verify
-        Mono<CartItemsDto> result = cartService.getCartItems();
+        Mono<CartItemsDto> result = cartService.getCartItems(1337L);
 
         StepVerifier.create(result)
                 .assertNext(cartItemsDto -> {
@@ -128,8 +134,7 @@ class CartServiceImplTest {
                 })
                 .verifyComplete();
 
-        verify(cartRepository).findAll();
-//        verifyNoInteractions(itemRepository, cartMapper);
+        verify(cartRepository).findAllByUserId(anyLong());
         verifyNoMoreInteractions(cartRepository);
     }
 
@@ -141,16 +146,17 @@ class CartServiceImplTest {
             Item item = createItem(itemId, "Test Item", "Desc", "img", 100L);
 
             // Mock repository responses
-            when(cartRepository.findByItem_Id(itemId)).thenReturn(Mono.empty());
+            Long userId = 1337L;
+            when(cartRepository.findByItemIdAndUserId(itemId, userId)).thenReturn(Mono.empty());
             when(itemRepository.findById(itemId)).thenReturn(Mono.just(item));
             when(cartRepository.save(any(Cart.class))).thenReturn(Mono.just(new Cart()));
 
             // Execute and verify
-            Mono<Void> result = cartService.changeItemsInCart(itemId, Action.PLUS);
+            Mono<Void> result = cartService.changeItemsInCart(itemId, userId, Action.PLUS);
 
             StepVerifier.create(result).verifyComplete();
 
-            verify(cartRepository).findByItem_Id(itemId);
+            verify(cartRepository).findByItemIdAndUserId(itemId, userId);
             verify(itemRepository).findById(itemId);
             verify(cartRepository).save(any(Cart.class));
             verifyNoMoreInteractions(cartRepository, itemRepository);
@@ -161,20 +167,22 @@ class CartServiceImplTest {
             Long itemId = 1L;
             Cart cart = new Cart();
             cart.setId(1L);
+            Long userId = 1337L;
+            cart.setUserId(userId);
             cart.setItemId(itemId);
             cart.setCount(5L);
 
             // Mock repository responses
-            when(cartRepository.findByItem_Id(itemId)).thenReturn(Mono.just(cart));
+            when(cartRepository.findByItemIdAndUserId(itemId, userId)).thenReturn(Mono.just(cart));
             when(cartRepository.save(cart)).thenReturn(Mono.just(cart));
             when(itemRepository.findById(itemId)).thenReturn(Mono.just(createItem(itemId, "Test Item", "Desc", "img", 100L)));
 
             // Execute and verify
-            Mono<Void> result = cartService.changeItemsInCart(itemId, Action.PLUS);
+            Mono<Void> result = cartService.changeItemsInCart(itemId, cart.getUserId(), Action.PLUS);
 
             StepVerifier.create(result).verifyComplete();
 
-            verify(cartRepository).findByItem_Id(itemId);
+            verify(cartRepository).findByItemIdAndUserId(itemId, userId);
             verify(cartRepository).save(cart);
             assertThat(cart.getCount()).isEqualTo(6L);
             verify(itemRepository, times(1)).findById(itemId);
@@ -185,16 +193,17 @@ class CartServiceImplTest {
         @Test
         void onActionMinus_whenCartIsEmpty() {
             Long itemId = 1L;
+            Long userId = 1337L;
 
             // Mock repository responses
-            when(cartRepository.findByItem_Id(itemId)).thenReturn(Mono.empty());
+            when(cartRepository.findByItemIdAndUserId(itemId, userId)).thenReturn(Mono.empty());
 
             // Execute and verify
-            Mono<Void> result = cartService.changeItemsInCart(itemId, Action.MINUS);
+            Mono<Void> result = cartService.changeItemsInCart(itemId, userId, Action.MINUS);
 
             StepVerifier.create(result).verifyComplete();
 
-            verify(cartRepository).findByItem_Id(itemId);
+            verify(cartRepository).findByItemIdAndUserId(itemId, userId);
             verifyNoMoreInteractions(cartRepository);
             verifyNoInteractions(itemRepository);
         }
@@ -204,19 +213,21 @@ class CartServiceImplTest {
             Long itemId = 1L;
             Cart cart = new Cart();
             cart.setId(1L);
+            Long userId = 1337L;
+            cart.setUserId(userId);
             cart.setItemId(itemId);
             cart.setCount(1L);
 
             // Mock repository responses
-            when(cartRepository.findByItem_Id(itemId)).thenReturn(Mono.just(cart));
+            when(cartRepository.findByItemIdAndUserId(itemId, userId)).thenReturn(Mono.just(cart));
             when(cartRepository.deleteById(cart.getId())).thenReturn(Mono.empty());
 
             // Execute and verify
-            Mono<Void> result = cartService.changeItemsInCart(itemId, Action.MINUS);
+            Mono<Void> result = cartService.changeItemsInCart(itemId, cart.getUserId(), Action.MINUS);
 
             StepVerifier.create(result).verifyComplete();
 
-            verify(cartRepository).findByItem_Id(itemId);
+            verify(cartRepository).findByItemIdAndUserId(itemId, userId);
             verify(cartRepository).deleteById(cart.getId());
             verifyNoMoreInteractions(cartRepository);
             verifyNoInteractions(itemRepository);
@@ -227,19 +238,21 @@ class CartServiceImplTest {
             Long itemId = 1L;
             Cart cart = new Cart();
             cart.setId(1L);
+            Long userId = 1337L;
+            cart.setUserId(userId);
             cart.setItemId(itemId);
             cart.setCount(10L);
 
             // Mock repository responses
-            when(cartRepository.findByItem_Id(itemId)).thenReturn(Mono.just(cart));
+            when(cartRepository.findByItemIdAndUserId(itemId, userId)).thenReturn(Mono.just(cart));
             when(cartRepository.save(cart)).thenReturn(Mono.just(cart));
 
             // Execute and verify
-            Mono<Void> result = cartService.changeItemsInCart(itemId, Action.MINUS);
+            Mono<Void> result = cartService.changeItemsInCart(itemId, cart.getUserId(), Action.MINUS);
 
             StepVerifier.create(result).verifyComplete();
 
-            verify(cartRepository).findByItem_Id(itemId);
+            verify(cartRepository).findByItemIdAndUserId(itemId, userId);
             verify(cartRepository).save(cart);
             assertThat(cart.getCount()).isEqualTo(9L);
             verifyNoMoreInteractions(cartRepository);
@@ -251,14 +264,15 @@ class CartServiceImplTest {
             Long itemId = 1L;
 
             // Mock repository responses
-            when(cartRepository.deleteByItem_Id(itemId)).thenReturn(Mono.empty());
+            Long userId = 1337L;
+            when(cartRepository.deleteByItem_Id(itemId, userId)).thenReturn(Mono.empty());
 
             // Execute and verify
-            Mono<Void> result = cartService.changeItemsInCart(itemId, Action.DELETE);
+            Mono<Void> result = cartService.changeItemsInCart(itemId, userId, Action.DELETE);
 
             StepVerifier.create(result).verifyComplete();
 
-            verify(cartRepository).deleteByItem_Id(itemId);
+            verify(cartRepository).deleteByItem_Id(itemId, userId);
             verifyNoMoreInteractions(cartRepository);
             verifyNoInteractions(itemRepository);
         }
@@ -268,17 +282,15 @@ class CartServiceImplTest {
     void createOrder() {
         // Setup test data
         List<Cart> carts = createCarts();
-        Map<Long, Item> items = Map.of(
-                1L, createItem(1L, "Item 1", "Desc 1", "img1", 12345L),
-                2L, createItem(2L, "Item 2", "Desc 2", "img2", 10L)
-        );
 
         Order order = new Order();
         order.setId(1L);
+        Long userId = 1337L;
+        order.setUserId(userId);
         order.setTotalSum(123460L);
 
         // Mock repository responses
-        when(cartRepository.findAll()).thenReturn(Flux.fromIterable(carts));
+        when(cartRepository.findAllByUserId(userId)).thenReturn(Flux.fromIterable(carts));
         when(orderRepository.save(any())).thenReturn(Mono.just(order));
         when(itemService.findItemById(1L)).thenReturn(Mono.just(new ItemDto(1L, "Item 1", "Desc 1", "img1", 10L, 12345L)));
         when(itemService.findItemById(2L)).thenReturn(Mono.just(new ItemDto(2L, "Item 2", "Desc 2", "img2", 1L, 10L)));
@@ -286,19 +298,26 @@ class CartServiceImplTest {
         when(cartRepository.deleteAll()).thenReturn(Mono.empty());
         when(paymentApi.balancePostWithHttpInfo(any())).thenReturn(
                 Mono.just(new ResponseEntity<>(HttpStatus.OK)));
+        final String accessToken = "token";
+        when(oAuth2Service.getTokenValue()).thenReturn(Mono.just(accessToken));
+        ApiClient apiClient = mock(ApiClient.class);
+        when(paymentApi.getApiClient()).thenReturn(apiClient);
+        when(apiClient.addDefaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)).thenReturn(apiClient);
 
         // Execute and verify
-        Mono<Long> result = cartService.createOrder();
+        Mono<Long> result = cartService.createOrder(order.getUserId());
 
         StepVerifier.create(result)
                 .assertNext(orderId -> assertThat(orderId).isEqualTo(1L))
                 .verifyComplete();
 
-        verify(cartRepository).findAll();
+        verify(cartRepository).findAllByUserId(userId);
         verifyNoInteractions(itemRepository);
         verify(orderRepository).save(argThat(actual -> Objects.equals(actual.getTotalSum(), order.getTotalSum())));
         verify(cartRepository).deleteAll();
         verify(paymentApi, times(1)).balancePostWithHttpInfo(any());
+        verify(paymentApi, times(1)).getApiClient();
+        verify(oAuth2Service, times(1)).getTokenValue();
         verifyNoMoreInteractions(cartRepository, orderRepository, paymentApi);
     }
 
@@ -309,16 +328,24 @@ class CartServiceImplTest {
 
         Order order = new Order();
         order.setId(1L);
+        Long userId = 1337L;
+        order.setUserId(userId);
+        order.setUserId(1337L);
         order.setTotalSum(123460L);
 
         // Mock repository responses
-        when(cartRepository.findAll()).thenReturn(Flux.fromIterable(carts));
+        when(cartRepository.findAllByUserId(userId)).thenReturn(Flux.fromIterable(carts));
         when(itemService.findItemById(1L)).thenReturn(Mono.just(new ItemDto(1L, "Item 1", "Desc 1", "img1", 10L, 12345L)));
         when(itemService.findItemById(2L)).thenReturn(Mono.just(new ItemDto(2L, "Item 2", "Desc 2", "img2", 1L, 10L)));
         when(paymentApi.balancePostWithHttpInfo(any())).thenReturn(Mono.error(new RuntimeException()));
+        final String accessToken = "token";
+        when(oAuth2Service.getTokenValue()).thenReturn(Mono.just(accessToken));
+        ApiClient apiClient = mock(ApiClient.class);
+        when(paymentApi.getApiClient()).thenReturn(apiClient);
+        when(apiClient.addDefaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)).thenReturn(apiClient);
 
         // Execute and verify
-        Mono<Long> result = cartService.createOrder();
+        Mono<Long> result = cartService.createOrder(order.getUserId());
 
         StepVerifier.create(result)
                 .expectError(IllegalStateException.class)
@@ -326,21 +353,25 @@ class CartServiceImplTest {
 
         verifyNoInteractions(itemRepository);
         verifyNoInteractions(orderRepository);
-        verify(cartRepository).findAll();
+        verify(cartRepository).findAllByUserId(userId);
         verifyNoInteractions(orderItemRepository);
         verify(paymentApi, times(1)).balancePostWithHttpInfo(any());
         verify(itemService, times(1)).findItemById(1L);
         verify(itemService, times(1)).findItemById(2L);
+        verify(paymentApi, times(1)).getApiClient();
+        verify(oAuth2Service, times(1)).getTokenValue();
         verifyNoMoreInteractions(cartRepository, paymentApi, itemService);
     }
 
     private List<Cart> createCarts() {
         Cart cart1 = new Cart();
         cart1.setId(1L);
+        cart1.setUserId(1337L);
         cart1.setItemId(1L);
         cart1.setCount(10L);
 
         Cart cart2 = new Cart();
+        cart2.setUserId(1337L);
         cart2.setId(2L);
         cart2.setItemId(2L);
         cart2.setCount(1L);
@@ -356,16 +387,5 @@ class CartServiceImplTest {
         item.setImagePath(imagePath);
         item.setPrice(price);
         return item;
-    }
-
-    private CartItemsDto createCartItemsDto() {
-        return new CartItemsDto(
-                List.of(
-                        new ItemDto(1L, "Item 1", "Description 1", "ImagePath 1", 10L, 12345L),
-                        new ItemDto(2L, "Item 2", "Description 2", "ImagePath 2", 1L, 10L)
-                ),
-                123460L,
-                false
-        );
     }
 }

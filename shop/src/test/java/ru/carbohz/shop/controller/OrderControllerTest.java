@@ -25,18 +25,20 @@ public class OrderControllerTest {
     @Autowired
     private WebTestClient webTestClient;
 
+    private static final Long USER_ID = 1337L;
+
     @Test
     public void getOrdersPage() {
         List<OrderDto> orders = new ArrayList<>();
 
-        when(orderService.getOrders()).thenReturn(Flux.fromIterable(orders));
+        when(orderService.getOrders(USER_ID)).thenReturn(Flux.fromIterable(orders));
 
         webTestClient.get()
                 .uri("/orders")
                 .exchange()
                 .expectStatus().isOk();
 
-        verify(orderService, times(1)).getOrders();
+        verify(orderService, times(1)).getOrders(USER_ID);
         verifyNoMoreInteractions(orderService);
     }
 
@@ -46,7 +48,7 @@ public class OrderControllerTest {
         boolean newOrder = true;
         OrderDto orderDto = new OrderDto();
 
-        when(orderService.getOrderById(orderId)).thenReturn(Mono.just(orderDto));
+        when(orderService.getOrderById(orderId, USER_ID)).thenReturn(Mono.just(orderDto));
 
         webTestClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/orders/{orderId}")
@@ -66,7 +68,7 @@ public class OrderControllerTest {
                     }
                 });
 
-        verify(orderService, times(1)).getOrderById(orderId);
+        verify(orderService, times(1)).getOrderById(orderId, USER_ID);
         verifyNoMoreInteractions(orderService);
     }
 }

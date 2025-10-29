@@ -29,6 +29,8 @@ public class ItemControllerTest {
     @Autowired
     private WebTestClient webTestClient;
 
+    private static final Long USER_ID = 1337L;
+
     @Test
     public void showItems() {
         String search = "random";
@@ -72,7 +74,7 @@ public class ItemControllerTest {
     public void addItemToCartFromMainPage() {
         Long itemId = 1L;
         Action action = Action.PLUS;
-        when(cartService.changeItemsInCart(itemId, action)).thenReturn(Mono.empty());
+        when(cartService.changeItemsInCart(itemId, USER_ID, action)).thenReturn(Mono.empty());
 
         webTestClient.post()
                 .uri(uriBuilder -> uriBuilder.path("/main/items/{itemId}")
@@ -82,7 +84,7 @@ public class ItemControllerTest {
                 .expectStatus().is3xxRedirection()
                 .expectHeader().valueEquals("Location", "/main/items");
 
-        verify(cartService, times(1)).changeItemsInCart(itemId, action);
+        verify(cartService, times(1)).changeItemsInCart(itemId, USER_ID, action);
         verifyNoMoreInteractions(cartService);
         verifyNoInteractions(itemService);
     }
@@ -114,7 +116,7 @@ public class ItemControllerTest {
         Long itemId = 1L;
         Action action = Action.MINUS;
 
-        when(cartService.changeItemsInCart(itemId, action))
+        when(cartService.changeItemsInCart(itemId, USER_ID, action))
                 .thenReturn(Mono.empty());
 
         webTestClient.post()
@@ -125,7 +127,7 @@ public class ItemControllerTest {
                 .expectStatus().is3xxRedirection()
                 .expectHeader().valueEquals("Location", "/items/" + itemId);
 
-        verify(cartService, times(1)).changeItemsInCart(itemId, action);
+        verify(cartService, times(1)).changeItemsInCart(itemId, USER_ID, action);
         verifyNoMoreInteractions(cartService);
         verifyNoInteractions(itemService);
     }

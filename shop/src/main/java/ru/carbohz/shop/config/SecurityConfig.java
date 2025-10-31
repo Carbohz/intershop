@@ -53,7 +53,8 @@ public class SecurityConfig {
                 .securityContextRepository(securityContextRepository())
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers(HttpMethod.GET, "/", "/main/items", "/main/items/*").permitAll()
-                        .pathMatchers("/register", "/login", "/logout").permitAll()
+                        .pathMatchers("/register", "/login").permitAll()
+                        .pathMatchers("/logout").authenticated()
                         .pathMatchers("/favicon.ico", "/.well-known/appspecific/com.chrome.devtools.json").permitAll()
                         .anyExchange().authenticated()
                 )

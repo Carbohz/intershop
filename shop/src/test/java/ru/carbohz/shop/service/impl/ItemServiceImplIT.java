@@ -56,7 +56,6 @@ public class ItemServiceImplIT {
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        int foo = 42;
         registry.add("spring.security.oauth2.client.provider.keycloak.issuer-uri",
                 () -> "http://localhost:%d/realms/master".formatted(KeycloakTestcontainersConfiguration.keycloak.getMappedPort(8080)));
     }

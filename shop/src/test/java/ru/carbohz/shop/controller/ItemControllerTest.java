@@ -1,14 +1,10 @@
 package ru.carbohz.shop.controller;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.oauth2.client.reactive.ReactiveOAuth2ClientAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
@@ -21,11 +17,10 @@ import ru.carbohz.shop.model.User;
 import ru.carbohz.shop.service.CartService;
 import ru.carbohz.shop.service.ItemService;
 
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.csrf;
+import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.mockUser;
 
 @WebFluxTest(controllers = ItemController.class,
         excludeAutoConfiguration = {
@@ -43,7 +38,14 @@ public class ItemControllerTest {
     @Autowired
     private WebTestClient webTestClient;
 
+    private static User MOCK_USER;
+
     private static final Long USER_ID = 1337L;
+
+    @BeforeAll
+    static void initUser() {
+        MOCK_USER = new User(USER_ID, "admin", "admin");
+    }
 
     @Test
     public void showItems() {
@@ -61,7 +63,9 @@ public class ItemControllerTest {
         when(itemService.getPageableItems(search, sort, pageSize, pageNumber))
                 .thenReturn(Mono.just(pageableItems));
 
-        webTestClient.get()
+        webTestClient.mutateWith(mockUser(MOCK_USER))
+                .mutateWith(csrf())
+                .get()
                 .uri(uriBuilder -> uriBuilder.path("/main/items")
                         .queryParam("search", search)
                         .queryParam("sort", sort)
@@ -90,9 +94,7 @@ public class ItemControllerTest {
         Action action = Action.PLUS;
         when(cartService.changeItemsInCart(itemId, USER_ID, action)).thenReturn(Mono.empty());
 
-        var userDetails = new User(USER_ID, "admin", "admin");
-
-        webTestClient.mutateWith(SecurityMockServerConfigurers.mockUser(userDetails))
+        webTestClient.mutateWith(mockUser(MOCK_USER))
                 .mutateWith(csrf())
                 .post()
                 .uri(uriBuilder -> uriBuilder.path("/main/items/{itemId}")
@@ -114,7 +116,9 @@ public class ItemControllerTest {
         itemDto.setTitle("Test item");
         when(itemService.findItemById(itemId)).thenReturn(Mono.just(itemDto));
 
-        webTestClient.get()
+        webTestClient.mutateWith(mockUser(MOCK_USER))
+                .mutateWith(csrf())
+                .get()
                 .uri("/items/{itemId}", itemId)
                 .exchange()
                 .expectStatus().isOk()
@@ -137,7 +141,10 @@ public class ItemControllerTest {
         when(cartService.changeItemsInCart(itemId, USER_ID, action))
                 .thenReturn(Mono.empty());
 
-        webTestClient.post()
+        webTestClient
+                .mutateWith(mockUser(MOCK_USER))
+                .mutateWith(csrf())
+                .post()
                 .uri(uriBuilder -> uriBuilder.path("/items/{itemId}")
                         .queryParam("action", action)
                         .build(itemId))

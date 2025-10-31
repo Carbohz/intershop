@@ -2,8 +2,10 @@ package ru.carbohz.shop.controller;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.oauth2.client.reactive.ReactiveOAuth2ClientAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -12,12 +14,18 @@ import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 import ru.carbohz.shop.dto.CartItemsDto;
 import ru.carbohz.shop.model.Action;
+import ru.carbohz.shop.model.User;
 import ru.carbohz.shop.service.CartService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.csrf;
+import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.mockUser;
 
-@WebFluxTest(CartController.class)
+@WebFluxTest(controllers = CartController.class,
+        excludeAutoConfiguration = {
+                ReactiveOAuth2ClientAutoConfiguration.class,
+        })
 public class CartControllerTest {
 
     @MockitoBean
@@ -26,7 +34,14 @@ public class CartControllerTest {
     @Autowired
     private WebTestClient webTestClient;
 
+    private static User MOCK_USER;
+
     private static final Long USER_ID = 1337L;
+
+    @BeforeAll
+    static void initUser() {
+        MOCK_USER = new User(USER_ID, "admin", "admin");
+    }
 
     @Test
     public void getCartItems() {
@@ -34,7 +49,9 @@ public class CartControllerTest {
 
         when(cartService.getCartItems(USER_ID)).thenReturn(Mono.just(cartItemsDto));
 
-        webTestClient.get().uri("/cart/items")
+        webTestClient.mutateWith(mockUser(MOCK_USER))
+                .mutateWith(csrf())
+                .get().uri("/cart/items")
                 .exchange()
                 .expectStatus().isOk()
                 .expectHeader().contentType(MediaType.TEXT_HTML)
@@ -56,7 +73,9 @@ public class CartControllerTest {
         Action action = Action.DELETE;
         when(cartService.changeItemsInCart(itemId, USER_ID, action)).thenReturn(Mono.empty());
 
-        webTestClient.post()
+        webTestClient.mutateWith(mockUser(MOCK_USER))
+                .mutateWith(csrf())
+                .post()
                 .uri(UriComponentsBuilder.fromPath("/cart/items/{itemId}")
                         .queryParam("action", action.name())
                         .build(itemId))
@@ -76,7 +95,9 @@ public class CartControllerTest {
 
         String expectedUrl = "/orders/" + orderId + "?newOrder=true";
 
-        webTestClient.post()
+        webTestClient.mutateWith(mockUser(MOCK_USER))
+                .mutateWith(csrf())
+                .post()
                 .uri("/cart/buy")
                 .exchange()
                 .expectStatus().is3xxRedirection()

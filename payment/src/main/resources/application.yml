@@ -25,7 +25,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:18080/realms/master # Адрес сервера авторизации для получения токена
+          issuer-uri: ${KEYCLOAK_ISSUER_URL:http://localhost:18080/realms/master} # Адрес сервера авторизации для получения токена
 server:
   port: 8081
 springdoc:

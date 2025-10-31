@@ -2,7 +2,13 @@ package ru.carbohz.shop.controller;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.oauth2.client.reactive.ReactiveOAuth2ClientAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
@@ -11,13 +17,21 @@ import ru.carbohz.shop.dto.PageableDto;
 import ru.carbohz.shop.dto.PageableItemsDto;
 import ru.carbohz.shop.model.Action;
 import ru.carbohz.shop.model.SortOption;
+import ru.carbohz.shop.model.User;
 import ru.carbohz.shop.service.CartService;
 import ru.carbohz.shop.service.ItemService;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.csrf;
 
-@WebFluxTest(ItemController.class)
+@WebFluxTest(controllers = ItemController.class,
+        excludeAutoConfiguration = {
+//                ReactiveSecurityAutoConfiguration.class,
+                ReactiveOAuth2ClientAutoConfiguration.class
+        })
 public class ItemControllerTest {
 
     @MockitoBean
@@ -76,7 +90,11 @@ public class ItemControllerTest {
         Action action = Action.PLUS;
         when(cartService.changeItemsInCart(itemId, USER_ID, action)).thenReturn(Mono.empty());
 
-        webTestClient.post()
+        var userDetails = new User(USER_ID, "admin", "admin");
+
+        webTestClient.mutateWith(SecurityMockServerConfigurers.mockUser(userDetails))
+                .mutateWith(csrf())
+                .post()
                 .uri(uriBuilder -> uriBuilder.path("/main/items/{itemId}")
                         .queryParam("action", action)
                         .build(itemId))

@@ -1,13 +1,16 @@
 package ru.carbohz.shop.controller;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.oauth2.client.reactive.ReactiveOAuth2ClientAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import ru.carbohz.shop.dto.OrderDto;
+import ru.carbohz.shop.model.User;
 import ru.carbohz.shop.service.OrderService;
 
 import java.util.ArrayList;
@@ -15,8 +18,13 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.csrf;
+import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.mockUser;
 
-@WebFluxTest(OrderController.class)
+@WebFluxTest(controllers = OrderController.class,
+        excludeAutoConfiguration = {
+                ReactiveOAuth2ClientAutoConfiguration.class,
+        })
 public class OrderControllerTest {
 
     @MockitoBean
@@ -25,7 +33,14 @@ public class OrderControllerTest {
     @Autowired
     private WebTestClient webTestClient;
 
+    private static User MOCK_USER;
+
     private static final Long USER_ID = 1337L;
+
+    @BeforeAll
+    static void initUser() {
+        MOCK_USER = new User(USER_ID, "admin", "admin");
+    }
 
     @Test
     public void getOrdersPage() {
@@ -33,7 +48,9 @@ public class OrderControllerTest {
 
         when(orderService.getOrders(USER_ID)).thenReturn(Flux.fromIterable(orders));
 
-        webTestClient.get()
+        webTestClient.mutateWith(mockUser(MOCK_USER))
+                .mutateWith(csrf())
+                .get()
                 .uri("/orders")
                 .exchange()
                 .expectStatus().isOk();
@@ -50,7 +67,9 @@ public class OrderControllerTest {
 
         when(orderService.getOrderById(orderId, USER_ID)).thenReturn(Mono.just(orderDto));
 
-        webTestClient.get()
+        webTestClient.mutateWith(mockUser(MOCK_USER))
+                .mutateWith(csrf())
+                .get()
                 .uri(uriBuilder -> uriBuilder.path("/orders/{orderId}")
                         .queryParam("newOrder", newOrder)
                         .build(orderId))

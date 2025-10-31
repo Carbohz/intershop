@@ -21,4 +21,6 @@ public interface CartRepository extends ReactiveCrudRepository<Cart, Long> {
                 .flatMap(this::delete)  // Delete each item
                 .then();
     }
+
+    Mono<Void> deleteAllByUserId(Long userId);
 }

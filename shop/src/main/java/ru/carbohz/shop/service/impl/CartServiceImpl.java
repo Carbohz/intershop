@@ -154,7 +154,7 @@ public class CartServiceImpl implements CartService {
                                                                             cartMapper.toOrderItems(carts, savedOrder.getId(), itemMap);
 
                                                                     return orderItemRepository.saveAll(orderItems)
-                                                                            .then(cartRepository.deleteAll())
+                                                                            .then(cartRepository.deleteAllByUserId(userId))
                                                                             .thenReturn(savedOrder.getId());
                                                                 });
                                                     })

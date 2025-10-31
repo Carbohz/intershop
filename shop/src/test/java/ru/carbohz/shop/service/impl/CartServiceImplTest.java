@@ -295,7 +295,7 @@ class CartServiceImplTest {
         when(itemService.findItemById(1L)).thenReturn(Mono.just(new ItemDto(1L, "Item 1", "Desc 1", "img1", 10L, 12345L)));
         when(itemService.findItemById(2L)).thenReturn(Mono.just(new ItemDto(2L, "Item 2", "Desc 2", "img2", 1L, 10L)));
         when(orderItemRepository.saveAll(anyList())).thenReturn(Flux.empty());
-        when(cartRepository.deleteAll()).thenReturn(Mono.empty());
+        when(cartRepository.deleteAllByUserId(userId)).thenReturn(Mono.empty());
         when(paymentApi.balancePostWithHttpInfo(any())).thenReturn(
                 Mono.just(new ResponseEntity<>(HttpStatus.OK)));
         final String accessToken = "token";
@@ -314,7 +314,7 @@ class CartServiceImplTest {
         verify(cartRepository).findAllByUserId(userId);
         verifyNoInteractions(itemRepository);
         verify(orderRepository).save(argThat(actual -> Objects.equals(actual.getTotalSum(), order.getTotalSum())));
-        verify(cartRepository).deleteAll();
+        verify(cartRepository).deleteAllByUserId(userId);
         verify(paymentApi, times(1)).balancePostWithHttpInfo(any());
         verify(paymentApi, times(1)).getApiClient();
         verify(oAuth2Service, times(1)).getTokenValue();

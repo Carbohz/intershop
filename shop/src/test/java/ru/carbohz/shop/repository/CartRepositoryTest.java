@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
+import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 import ru.carbohz.shop.config.NoCacheTestConfiguration;
 import ru.carbohz.shop.config.PostgresTestcontainersConfiguration;
@@ -77,5 +78,45 @@ class CartRepositoryTest {
 
         Optional<Cart> maybeCart2 = cartRepository.findByItem_Id(1L).blockOptional();
         assertThat(maybeCart2).isEmpty();
+    }
+
+    @Test
+    void deleteAllByUserId() {
+        // создаем вторго пользователя
+        User user = new User();
+        user.setName("fakeUser");
+        user.setPassword("fakePassword");
+        User saved = userRepository.save(user).block();
+        Long userId = saved.getId();
+
+        // достаем любой предмет, например, пятый
+        Optional<Item> maybeItem = itemRepository.findById(5L).blockOptional();
+        assertThat(maybeItem).isPresent();
+        Item item = maybeItem.get();
+
+        // добавляем в корзину предмет для фейкового пользователя
+        Cart cart = new Cart();
+        cart.setUserId(userId);
+        cart.setItemId(item.getId());
+        cart.setCount(1L);
+        cartRepository.save(cart).block();
+
+        // проверяем, что есть корзина для фейкового пользователя
+        StepVerifier.create(cartRepository.findAllByUserId(userId))
+                .assertNext(cartForUser -> {
+                    assertThat(cartForUser.getUserId()).isEqualTo(userId);
+                })
+                .verifyComplete();
+
+        // удаляем корзину для фейкового пользователя
+        cartRepository.deleteAllByUserId(userId).block();
+
+        // проверяем, что корзины для фейкового пользователя не осталось
+        Flux<Cart> res = cartRepository.findAll();
+        StepVerifier.create(res)
+                .assertNext(cartFound -> {
+                    assertThat(cartFound.getUserId()).isNotEqualTo(userId);
+                })
+                .verifyComplete();
     }
 }

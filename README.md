@@ -8,6 +8,9 @@
 - r2dbc-postgresql для PostgreSQL
 - Spring Data Redis для кеширования товаров
 - OpenAPI дляразработки RESTful-сервиса платежей на реактивном стеке (клиент и сервер)
+- Spring Security в качестве модуля авторизации пользователей
+- OAuth2 авторизация для общения между двумя сервисами. В качестве сервера авторизации выступает Keycloack.
+  В сервере авторизации зарегистрированы приложение «Витрина интернет-магазина» как клиент и RESTful-сервис платежей как сервер ресурсов (авторизация осуществляется по Client Credentials Flow).
 - Spring Boot Test, @DataR2dbcTest, @WebFluxTest и Testcontainers для тестов
 - gradle как система сборки
 - jib для сборки docker-образов и docker compose для развертывания приложения
@@ -22,9 +25,9 @@ git clone https://github.com/Carbohz/intershop.git
 ```shell
 cd intershop
 ```
-- переключится на тег v3.0
+- переключится на тег v4.0
 ```shell
-git checkout tags/v3.0
+git checkout tags/v4.0
 ```
 ### Запуск локально (Intellij Idea)
 - открыть проект в Intellij Idea
@@ -124,7 +127,7 @@ docker-compose up -d
 
 В приложении используются следующие эндпоинты:
 
-а) GET "/balance" - получение баланса на счёте
+а) GET "/balance/{userId}" - получение баланса на счёте для пользователя с userId
 
 б) POST "/balance" - осуществление платежа
 - в теле запроса передается сумма для списания
